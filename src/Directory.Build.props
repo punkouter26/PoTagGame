@@ -1,0 +1,22 @@
+<Project>
+  <!--
+    Directory.Build.props — applies to ALL projects under src/.
+    Individual .csproj files should NOT repeat these properties.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <!-- Treat every compiler warning as a build error -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!--
+      NU1900 = "could not retrieve vulnerability data" (NuGet.org unreachable).
+      Exclude from WarningsAsErrors so a network blip doesn't break the build
+      while still surfacing as a warning so CI can catch real vulnerabilities.
+    -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900</WarningsNotAsErrors>
+    <!-- Suppress missing XML-doc warnings; this is an application, not a library -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+</Project>

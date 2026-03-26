@@ -1,0 +1,557 @@
+{
+  "config": {
+    "configFile": "C:\\Users\\punko\\Downloads\\PoSpriteCode\\src\\tests\\TagGame.Tests.E2E\\playwright.config.ts",
+    "rootDir": "C:/Users/punko/Downloads/PoSpriteCode/src/tests/TagGame.Tests.E2E/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 3
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/punko/Downloads/PoSpriteCode/src/tests/TagGame.Tests.E2E/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 3
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/punko/Downloads/PoSpriteCode/src/tests/TagGame.Tests.E2E/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/punko/Downloads/PoSpriteCode/src/tests/TagGame.Tests.E2E/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 3
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "C:/Users/punko/Downloads/PoSpriteCode/src/tests/TagGame.Tests.E2E/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 12,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "game.spec.ts",
+      "file": "game.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Game",
+          "file": "game.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "game canvas is visible after starting",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 663,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-26T17:53:59.423Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8b1bb1493a64c9fc3ab6-f58b1a489400ad4fd78c",
+              "file": "game.spec.ts",
+              "line": 20,
+              "column": 7
+            },
+            {
+              "title": "countdown timer appears and shows seconds",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 661,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-26T17:54:00.289Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8b1bb1493a64c9fc3ab6-760ba0304282581d11f8",
+              "file": "game.spec.ts",
+              "line": 24,
+              "column": 7
+            },
+            {
+              "title": "IT badge shown on screen",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 649,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-26T17:54:00.958Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8b1bb1493a64c9fc3ab6-5543b1067a84d3900df1",
+              "file": "game.spec.ts",
+              "line": 34,
+              "column": 7
+            },
+            {
+              "title": "keyboard arrow keys move the player (canvas receives input)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 669,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-26T17:54:01.614Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8b1bb1493a64c9fc3ab6-1ea077368b2e2d79b993",
+              "file": "game.spec.ts",
+              "line": 38,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "lobby.spec.ts",
+      "file": "lobby.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Lobby",
+          "file": "lobby.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "page loads with name input and join button",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 334,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-26T17:53:59.422Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a186d585d290839e5418-a7809e0ed0775bf50992",
+              "file": "lobby.spec.ts",
+              "line": 8,
+              "column": 7
+            },
+            {
+              "title": "player can join lobby and see their name in the list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 413,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-26T17:53:59.982Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a186d585d290839e5418-da26ab8ea395b4062db8",
+              "file": "lobby.spec.ts",
+              "line": 14,
+              "column": 7
+            },
+            {
+              "title": "Start Game button appears when a player has joined",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 338,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-26T17:54:00.404Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a186d585d290839e5418-45f9b9af857c189da0bc",
+              "file": "lobby.spec.ts",
+              "line": 22,
+              "column": 7
+            },
+            {
+              "title": "connection badge shows connected state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 246,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-26T17:54:00.748Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a186d585d290839e5418-ed68aea4d653aa4a10e4",
+              "file": "lobby.spec.ts",
+              "line": 30,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "multiplayer.spec.ts",
+      "file": "multiplayer.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Two-player multiplayer",
+          "file": "multiplayer.spec.ts",
+          "line": 23,
+          "column": 6,
+          "specs": [
+            {
+              "title": "two players join the lobby and see each other in the player list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 883,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-26T17:53:59.422Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "141e0e3d3b30ec82e56e-c177c18e335714f43ac5",
+              "file": "multiplayer.spec.ts",
+              "line": 44,
+              "column": 7
+            },
+            {
+              "title": "player 1 starts the game and both players see the game canvas",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "timedOut",
+                      "duration": 30076,
+                      "error": {
+                        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+                        "stack": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                      },
+                      "errors": [
+                        {
+                          "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+                        },
+                        {
+                          "location": {
+                            "file": "C:\\Users\\punko\\Downloads\\PoSpriteCode\\src\\tests\\TagGame.Tests.E2E\\tests\\multiplayer.spec.ts",
+                            "column": 55,
+                            "line": 18
+                          },
+                          "message": "Error: locator.click: Target page, context or browser has been closed\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: /^join$/i })\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"submit\" class=\"px-4 py-2 rounded font-semibold transition-colors focus:outline-none focus:ring-2 bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-400 disabled:opacity-50 \">Join</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 ├ù waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"bg-gray-800 rounded-xl p-8 text-white w-full max-w-sm\">ΓÇª</div> from <div class=\"fixed inset-0 bg-black/70 flex items-center justify-center z-50\">ΓÇª</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 ├ù waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <div class=\"bg-gray-800 rounded-xl p-8 text-white w-full max-w-sm\">ΓÇª</div> from <div class=\"fixed inset-0 bg-black/70 flex items-center justify-center z-50\">ΓÇª</div> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    2 ├ù waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element was detached from the DOM, retrying\u001b[22m\n\u001b[2m      - locator resolved to <button disabled type=\"submit\" class=\"px-4 py-2 rounded font-semibold transition-colors focus:outline-none focus:ring-2 bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-400 disabled:opacity-50 \">Join</button>\u001b[22m\n\u001b[2m    - attempting click action\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 20ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m    53 ├ù waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n\n  16 |   });\n  17 |   await page.locator('input[placeholder*=\"name\" i]').fill(playerName);\n> 18 |   await page.getByRole('button', { name: /^join$/i }).click();\n     |                                                       ^\n  19 |   // The player's own name appears in the player list\n  20 |   await expect(page.getByText(playerName)).toBeVisible({ timeout: 10_000 });\n  21 | }\n    at joinLobby (C:\\Users\\punko\\Downloads\\PoSpriteCode\\src\\tests\\TagGame.Tests.E2E\\tests\\multiplayer.spec.ts:18:55)\n    at C:\\Users\\punko\\Downloads\\PoSpriteCode\\src\\tests\\TagGame.Tests.E2E\\tests\\multiplayer.spec.ts:67:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-26T17:54:00.522Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\punko\\Downloads\\PoSpriteCode\\src\\tests\\TagGame.Tests.E2E\\test-results\\multiplayer-Two-player-mul-acbf5-players-see-the-game-canvas-chromium\\test-failed-2.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\punko\\Downloads\\PoSpriteCode\\src\\tests\\TagGame.Tests.E2E\\test-results\\multiplayer-Two-player-mul-acbf5-players-see-the-game-canvas-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\punko\\Downloads\\PoSpriteCode\\src\\tests\\TagGame.Tests.E2E\\test-results\\multiplayer-Two-player-mul-acbf5-players-see-the-game-canvas-chromium\\error-context.md"
+                        }
+                      ]
+                    },
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 972,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2026-03-26T17:54:31.484Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\punko\\Downloads\\PoSpriteCode\\src\\tests\\TagGame.Tests.E2E\\test-results\\multiplayer-Two-player-mul-acbf5-players-see-the-game-canvas-chromium-retry1\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "flaky"
+                }
+              ],
+              "id": "141e0e3d3b30ec82e56e-5c9a518b58e8a12c6337",
+              "file": "multiplayer.spec.ts",
+              "line": 65,
+              "column": 7
+            },
+            {
+              "title": "both players see the timer and IT badge after game starts",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1028,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-03-26T17:54:32.669Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "141e0e3d3b30ec82e56e-a57317c93091946ca18a",
+              "file": "multiplayer.spec.ts",
+              "line": 83,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-03-26T17:53:58.530Z",
+    "duration": 35305.817,
+    "expected": 10,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 1
+  }
+}

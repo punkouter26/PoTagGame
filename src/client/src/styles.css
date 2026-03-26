@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Prevent default browser text-selection during gameplay */
+canvas { user-select: none; outline: none; }

@@ -1,0 +1,72 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    // ── Kill any running dotnet process so the port is free ─────────────────
+    {
+      "label": "kill-dotnet",
+      "type": "shell",
+      "command": "Get-Process dotnet -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Milliseconds 800; Write-Host 'dotnet processes cleared'",
+      "options": {
+        "shell": { "executable": "pwsh", "args": [ "-NonInteractive", "-Command" ] }
+      },
+      "presentation": { "reveal": "silent", "panel": "shared", "close": true }
+    },
+
+    // ── Build server ────────────────────────────────────────────────────────
+    {
+      "label": "build-server",
+      "type": "shell",
+      "command": "dotnet build src/server/TagGame.csproj -c Debug",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "shell": { "executable": "pwsh", "args": [ "-NonInteractive", "-Command" ] }
+      },
+      "group":   "build",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": "$msCompile"
+    },
+
+    // ── Watch server with Hot Reload (dotnet watch) ─────────────────────────
+    {
+      "label": "watch-server",
+      "type": "shell",
+      "command": "dotnet watch run --project src/server/TagGame.csproj --launch-profile http",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "shell": { "executable": "pwsh", "args": [ "-NonInteractive", "-Command" ] }
+      },
+      "isBackground": true,
+      "dependsOn": "kill-dotnet",
+      "problemMatcher": {
+        "pattern": { "regexp": "^(.*error.*)", "message": 1 },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "dotnet watch",
+          "endsPattern":   "Now listening on:"
+        }
+      },
+      "presentation": { "reveal": "always", "panel": "new" }
+    },
+
+    // ── Start client dev server (Vite) ──────────────────────────────────────
+    {
+      "label": "start-client",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/src/client",
+        "shell": { "executable": "pwsh", "args": [ "-NonInteractive", "-Command" ] }
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": { "regexp": "^(.*error.*)", "message": 1 },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "VITE",
+          "endsPattern":   "➜\\s+Local:"
+        }
+      },
+      "presentation": { "reveal": "always", "panel": "new" }
+    }
+  ]
+}

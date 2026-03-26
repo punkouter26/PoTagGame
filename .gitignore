@@ -1,0 +1,55 @@
+# .NET build outputs
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Rider
+.idea/
+*.sln.iml
+
+# VS Code (keep .vscode tracked if desired; comment out if not)
+# .vscode/
+
+# Logs
+logs/
+*.log
+
+# NuGet packages
+*.nupkg
+.nuget/
+packages/
+
+# Publish output
+publish/
+out/
+
+# ASP.NET Core data protection keys
+DataProtection-Keys/
+
+# dotnet test results
+TestResults/
+coverage/
+*.trx
+*.coveragexml
+
+# Node / Client
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Playwright
+src/tests/TagGame.Tests.E2E/playwright-report/
+src/tests/TagGame.Tests.E2E/test-results/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db

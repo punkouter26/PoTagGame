@@ -1,0 +1,35 @@
+### ─────────────────────────────────────────────────
+### PoTagGame — HTTP scratch file
+### Base URL: http://localhost:5000  (HTTP profile)
+###          https://localhost:5001  (HTTPS profile)
+### ─────────────────────────────────────────────────
+
+@baseUrl = http://localhost:5000
+
+### ── Health ──────────────────────────────────────
+# Expected: 200 OK  {"status":"Healthy"}
+GET {{baseUrl}}/health
+Accept: application/json
+
+###
+
+### ── Diagnostics ──────────────────────────────────
+# Expected: 200 OK  JSON with app/env/server/connections keys
+GET {{baseUrl}}/diag
+Accept: application/json
+
+###
+
+### ── OpenAPI document ──────────────────────────────
+# (Available once Scalar/OpenAPI is wired in Program.cs)
+GET {{baseUrl}}/openapi/v1.json
+Accept: application/json
+
+###
+
+### ── SignalR negotiate (verify hub routing) ────────
+# Expected: 302 / 200 JSON with connectionId + availableTransports
+POST {{baseUrl}}/tagHub/negotiate?negotiateVersion=1
+Content-Type: application/json
+
+###

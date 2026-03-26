@@ -1,0 +1,22 @@
+# Exclude compiled output — Copilot should only reason about source files
+bin/
+obj/
+.vs/
+
+# Node dependencies
+node_modules/
+
+# Playwright test results
+playwright-report/
+test-results/
+
+# Logs
+logs/
+
+# Build manifests (generated, not authoritative)
+*.staticwebassets.runtime.json
+project.assets.json
+*.nuget.dgspec.json
+*.nuget.g.props
+*.nuget.g.targets
+project.nuget.cache

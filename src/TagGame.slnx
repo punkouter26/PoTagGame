@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/server/">
+    <Project Path="server/TagGame.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TagGame.Tests.Integration/TagGame.Tests.Integration.csproj" />
+    <Project Path="tests/TagGame.Tests.Unit/TagGame.Tests.Unit.csproj" />
+  </Folder>
+</Solution>

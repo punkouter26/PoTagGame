@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    TargetFramework, Nullable, ImplicitUsings, TreatWarningsAsErrors, and NoWarn
+    are inherited from src/Directory.Build.props.
+    Package versions are managed centrally in src/Directory.Packages.props (CPM).
+  -->
+  <PropertyGroup>
+    <RootNamespace>TagGame.Tests.Unit</RootNamespace>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="FluentAssertions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reference the production project so tests compile against real types -->
+    <ProjectReference Include="..\..\server\TagGame.csproj" />
+  </ItemGroup>
+</Project>

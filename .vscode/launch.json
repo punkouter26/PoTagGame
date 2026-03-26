@@ -1,0 +1,52 @@
+{
+  "version": "0.2.0",
+  "compounds": [
+    {
+      // F5 → kills existing dotnet → builds → launches server (with debugger)
+      //       and starts Vite client in parallel → opens Edge
+      "name":           "PoTagGame: Full Stack",
+      "configurations": [ "PoTagGame: Server" ],
+      "preLaunchTask":  "start-client",
+      "stopAll":        true
+    }
+  ],
+  "configurations": [
+    {
+      "name":            "PoTagGame: Server",
+      "type":            "coreclr",
+      "request":         "launch",
+      "preLaunchTask":   "build-server",
+      "program":         "${workspaceFolder}/src/server/bin/Debug/net10.0/TagGame.dll",
+      "args":            [],
+      "cwd":             "${workspaceFolder}/src/server",
+      "stopAtEntry":     false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      // Open the Vite dev server in Edge once the API is ready
+      "serverReadyAction": {
+        "action":     "openExternally",
+        "pattern":    "Now listening on: (https?://\\S+)",
+        "uriFormat":  "http://localhost:5173",
+        "windows": {
+          "command": "cmd.exe",
+          "args":    "/C start msedge http://localhost:5173"
+        }
+      }
+    },
+    {
+      // Standalone server-only debug (no client)
+      "name":          "PoTagGame: Server Only",
+      "type":          "coreclr",
+      "request":       "launch",
+      "preLaunchTask": "build-server",
+      "program":       "${workspaceFolder}/src/server/bin/Debug/net10.0/TagGame.dll",
+      "args":          [],
+      "cwd":           "${workspaceFolder}/src/server",
+      "stopAtEntry":   false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  ]
+}
