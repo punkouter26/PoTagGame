@@ -6,7 +6,6 @@ using TagGame.Domain;
 using TagGame.Features.Game;
 using TagGame.Features.Lobby;
 using TagGame.Features.Position;
-using TagGame.Features.Replay;
 using TagGame.Infrastructure.BackgroundServices;
 using TagGame.Infrastructure.Hubs;
 
@@ -48,7 +47,7 @@ try
     // ── Domain singleton ───────────────────────────────────────────────────────
     // Shared across all Hub instances and the background service.
     // SOLID: Dependency-Inversion — registered by interface; resolved by DI.
-    builder.Services.AddSingleton<GameService>();
+    builder.Services.AddSingleton<IGameService, GameService>();
 
     // ── VSA Feature Handlers — transient per Hub invocation ───────────────────
     builder.Services.AddTransient<JoinLobbyHandler>();

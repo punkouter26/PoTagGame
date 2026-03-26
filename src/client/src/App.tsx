@@ -1,72 +1,37 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { useSignalR } from '@/features/connection/useSignalR';
-import { useGame } from '@/features/game/useGame';
-import { LobbyScreen } from '@/features/lobby/LobbyScreen';
-import { GameCanvas } from '@/features/game/GameCanvas';
-import { ReplayViewer, type ReplayData } from '@/features/game/ReplayViewer';
+import { useEffect, useRef, useState } from 'react';
+import { useSignalR } from '@/features/connection';
+import { useGame } from '@/features/game';
+import { LobbyScreen } from '@/features/lobby';
+import { GameCanvas } from '@/features/game';
 import { DEFAULT_ARENA_ID } from '@/constants/arenas';
 
-const HUB_URL = '/tagHub';  // relative — same origin as .NET server
+const HUB_URL = '/tagHub';
 
-/**
- * App — the root component.
- *
- * Responsibilities:
- * - Establish and own the SignalR connection (single source of truth)
- * - Derive game phase from reducer state
- * - Render Lobby or GameCanvas based on phase
- *
- * Phase transitions are driven entirely by server events dispatched
- * through useGame → gameReducer (no ad-hoc setState calls).
- */
 export default function App() {
   const { connection, status, isOnline } = useSignalR(HUB_URL);
-  const { state, sendStart }             = useGame(connection, isOnline);
+  const { state, sendStart, resetToLobby } = useGame(connection, isOnline);
   const [selectedArenaId, setSelectedArenaId] = useState(DEFAULT_ARENA_ID);
 
-  // ── Replay state ────────────────────────────────────────────────────────
-  const [replayData, setReplayData]   = useState<ReplayData | null>(null);
-  const [showReplay, setShowReplay]   = useState(false);
+  const isSessionOver = state.currentRound >= state.totalRounds;
 
-  // Listen for ReplayData from server
-  useEffect(() => {
-    if (!connection) return;
-    const handler = (data: ReplayData | null) => {
-      if (data && data.frames && data.frames.length > 0) {
-        setReplayData(data);
-        setShowReplay(true);
-        setShowEndOverlay(false);
-      }
-    };
-    connection.on('ReplayData', handler);
-    return () => { connection.off('ReplayData', handler); };
-  }, [connection]);
-
-  const handleWatchReplay = useCallback(() => {
-    if (connection && isOnline) {
-      void connection.invoke('GetReplay').catch(console.error);
-    }
-  }, [connection, isOnline]);
-
-  // ── Round Over overlay minimum display time ─────────────────────────────
-  // Hold the overlay open for at least 6 s so players can read the leaderboard
-  // before the server's auto-reset LobbyUpdated arrives (~3 s after game end).
-  const [showEndOverlay, setShowEndOverlay] = useState(false);
+  // Session-end overlay with minimum display time
+  const [showSessionEnd, setShowSessionEnd] = useState(false);
   const endTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (state.phase === 'ENDED') {
-      setShowEndOverlay(true);
+    if (state.phase === 'ENDED' && isSessionOver) {
+      setShowSessionEnd(true);
       if (endTimerRef.current) clearTimeout(endTimerRef.current);
-      endTimerRef.current = setTimeout(() => setShowEndOverlay(false), 6_000);
+      endTimerRef.current = setTimeout(() => setShowSessionEnd(false), 10_000);
     }
-    return () => {
-      if (endTimerRef.current) clearTimeout(endTimerRef.current);
-    };
-  }, [state.phase]);
+    return () => { if (endTimerRef.current) clearTimeout(endTimerRef.current); };
+  }, [state.phase, isSessionOver]);
+
+  // Inter-round banner (auto-dismisses when next round starts)
+  const showRoundBanner = state.phase === 'ENDED' && !isSessionOver;
 
   return (
     <>
-      {state.phase !== 'PLAYING' ? (
+      {state.phase !== 'PLAYING' && !showRoundBanner ? (
         <LobbyScreen
           gameState={state}
           connection={connection}
@@ -81,54 +46,56 @@ export default function App() {
           gameState={state}
           connection={connection}
           isOnline={isOnline}
-          onLeave={() => window.location.reload()}
+          onLeave={() => resetToLobby()}
         />
       )}
 
-      {/* Game-ended overlay — stays visible for at least 6 s after round end */}
-      {showEndOverlay && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-xl p-8 text-white w-full max-w-sm">
-            <h2 className="text-2xl font-bold mb-4 text-center">Round Over!</h2>
-            <ol className="space-y-2 mb-6">
-              {state.leaderboard.map((p, i) => (
-                <li key={p.id} className="flex justify-between">
-                  <span>
-                    {i + 1}. {p.name}
-                    {p.id === state.myId && (
-                      <span className="ml-1 text-xs text-gray-400">(you)</span>
-                    )}
-                  </span>
-                  <span className="text-gray-400">{p.itDuration.toFixed(1)}s IT</span>
-                </li>
-              ))}
-            </ol>
-            <div className="flex flex-col gap-2">
-              {isOnline && (
-                <button
-                  className="w-full bg-gray-600 hover:bg-gray-500 text-white py-2 rounded font-semibold"
-                  onClick={handleWatchReplay}
-                >
-                  Watch Replay
-                </button>
-              )}
-              <button
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-semibold"
-                onClick={() => window.location.reload()}
-              >
-                Play Again
-              </button>
-            </div>
+      {/* Inter-round banner — brief overlay between rounds */}
+      {showRoundBanner && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 animate-fade-in pointer-events-none">
+          <div className="glass-card rounded-2xl px-10 py-6 text-white text-center animate-scale-in shadow-2xl">
+            <p className="text-sm text-gray-400 uppercase tracking-wider mb-1">
+              Round {state.currentRound} of {state.totalRounds}
+            </p>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Round Complete!
+            </h2>
+            <p className="text-gray-400 text-sm mt-2">Next round starting...</p>
           </div>
         </div>
       )}
 
-      {/* Replay viewer overlay */}
-      {showReplay && replayData && (
-        <ReplayViewer
-          data={replayData}
-          onClose={() => setShowReplay(false)}
-        />
+      {/* Session-end overlay — final leaderboard */}
+      {showSessionEnd && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 animate-fade-in">
+          <div className="glass-card rounded-2xl p-8 text-white w-full max-w-sm animate-scale-in shadow-2xl">
+            <h2 className="text-2xl font-bold mb-4 text-center bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Game Over!
+            </h2>
+            <p className="text-center text-sm text-gray-400 mb-4">
+              {state.totalRounds} rounds completed
+            </p>
+            <ol className="space-y-2 mb-6">
+              {state.leaderboard.map((p, i) => (
+                <li key={p.id} className="flex justify-between animate-fade-in-up" style={{ animationDelay: `${i * 80}ms` }}>
+                  <span>
+                    {i === 0 ? '🏆' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`} {p.name}
+                    {p.id === state.myId && (
+                      <span className="ml-1 text-xs text-indigo-400">(you)</span>
+                    )}
+                  </span>
+                  <span className="text-gray-400 font-mono">{p.itDuration.toFixed(1)}s IT</span>
+                </li>
+              ))}
+            </ol>
+            <button
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white py-2.5 rounded-xl font-semibold transition-all shadow-lg"
+              onClick={() => { setShowSessionEnd(false); resetToLobby(); }}
+            >
+              Play Again
+            </button>
+          </div>
+        </div>
       )}
     </>
   );

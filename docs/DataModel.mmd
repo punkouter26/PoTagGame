@@ -1,0 +1,71 @@
+erDiagram
+    GameRoom ||--o{ Player : "contains 1..8"
+    GameRoom ||--|| ArenaDefinition : "uses"
+    GameRoom ||--o| ReplayData : "records"
+    ArenaDefinition ||--o{ ArenaWall : "defines"
+    ReplayData ||--o{ ReplayFrame : "contains"
+    ReplayFrame ||--o{ PlayerSnapshot : "captures"
+    Player ||--|| PlayerSnapshot : "memento of"
+
+    GameRoom {
+        string roomId PK
+        GamePhase phase "Lobby | Playing | Ended"
+        string arenaId FK
+        int currentRound "1-based"
+        int totalRounds "default 3"
+        long roundStartMs "Unix epoch ms"
+        int maxPlayers "8"
+        int roundDurationMs "40000"
+        float tagRadius "40px"
+        double immunityMs "2000"
+    }
+
+    Player {
+        string id PK "8-char UUID"
+        string connectionId UK "SignalR conn ID"
+        string name "sanitised display name"
+        int colorIdx "0-7 unique per room"
+        float x "0-1280"
+        float y "0-720"
+        string state "IDLE | WALK | JUMP | PUNCH"
+        string direction "north | south | east | west"
+        boolean isIt "tag carrier"
+        long itSince "Unix ms when became IT"
+        double itDuration "accumulated seconds as IT"
+        long immuneUntil "Unix ms immunity expires"
+    }
+
+    PlayerSnapshot {
+        string id PK
+        string name
+        int colorIdx
+        float x
+        float y
+        string state
+        string direction
+        boolean isIt
+        double itDuration
+    }
+
+    ArenaDefinition {
+        string id PK "grassland | dungeon | rooftop"
+        string name "display name"
+        string bgColor "hex"
+        string wallColor "hex"
+    }
+
+    ArenaWall {
+        float x
+        float y
+        float w "width"
+        float h "height"
+    }
+
+    ReplayData {
+        string arenaId FK
+        string itId "initial IT player"
+    }
+
+    ReplayFrame {
+        double timestampMs "relative to round start"
+    }

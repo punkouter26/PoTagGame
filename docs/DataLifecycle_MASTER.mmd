@@ -1,0 +1,82 @@
+flowchart TB
+    %% ── Ingestion ──
+    subgraph Ingestion["Data Ingestion"]
+        KBInput["Keyboard / Touch Input"]
+        InputHandler["InputHandler\nKeydown · Keyup · Swipe · Tap"]
+        LocalState["Local Player State\nx · y · state · direction"]
+    end
+
+    KBInput --> InputHandler
+    InputHandler -->|"Aggregates movement + action"| LocalState
+
+    %% ── Processing ──
+    subgraph Processing["Server-Side Processing"]
+        SignalR["SignalR RPC\nUpdatePosition"]
+        Validate["Validate Coordinates\n0–1280 × 0–720\nState ∈ IDLE|WALK|JUMP|PUNCH"]
+        GameSvc["GameService.UpdatePosition\nAcquire Lock"]
+        WallCheck["Wall Collision\nCircle-vs-AABB"]
+        TagCheck["TagChecker\nRadius 40px · 2s Immunity"]
+        Snapshot["PlayerSnapshot.From\nImmutable Memento"]
+        ReplayRec["ReplayRecorder\nAppend Frame"]
+    end
+
+    LocalState -->|"Every 50ms (20 fps)"| SignalR
+    SignalR --> Validate
+    Validate -->|"Valid"| GameSvc
+    GameSvc --> WallCheck
+    WallCheck --> TagCheck
+    TagCheck -->|"Tag occurred"| GameSvc
+    GameSvc --> Snapshot
+    GameSvc --> ReplayRec
+
+    %% ── Timer Processing ──
+    subgraph TimerProc["Background Timer (1 Hz)"]
+        BGTick["GameBackgroundService"]
+        TimeCheck["Check Remaining Seconds"]
+        RoundLogic["End Round / Restart\nAuto-restart after 3s"]
+    end
+
+    BGTick --> TimeCheck
+    TimeCheck -->|"Time expired"| RoundLogic
+    RoundLogic -->|"Mutates"| GameSvc
+
+    %% ── Egress / UI Update ──
+    subgraph Egress["Egress & UI Update"]
+        Broadcast["SignalR Broadcast\nStateUpdated · TimeTick\nRoundEnded · GameEnded"]
+        Reducer["React useReducer\nPure State Transition"]
+        Canvas["Canvas 2D Render\n60 fps · Sprite Tinting"]
+        AnimCtrl["AnimationController\nFrame Advance · State Switch"]
+        SpriteCache["SpriteLoader Cache\nFlyweight Pattern"]
+    end
+
+    Snapshot -->|"Broadcast to all"| Broadcast
+    BGTick -->|"TimeTick every 1s"| Broadcast
+    Broadcast --> Reducer
+    Reducer --> Canvas
+    Canvas --> AnimCtrl
+    AnimCtrl --> SpriteCache
+
+    %% ── Styles ──
+    style Ingestion fill:#1a1a2e,stroke:#e94560,color:#fff
+    style Processing fill:#0f3460,stroke:#533483,color:#fff
+    style TimerProc fill:#16213e,stroke:#0f3460,color:#fff
+    style Egress fill:#533483,stroke:#e94560,color:#fff
+
+    style KBInput fill:#1a1a2e,stroke:#e94560,color:#fff
+    style InputHandler fill:#1a1a2e,stroke:#e94560,color:#fff
+    style LocalState fill:#1a1a2e,stroke:#e94560,color:#fff
+    style SignalR fill:#0f3460,stroke:#533483,color:#fff
+    style Validate fill:#0f3460,stroke:#533483,color:#fff
+    style GameSvc fill:#0f3460,stroke:#533483,color:#fff
+    style WallCheck fill:#0f3460,stroke:#533483,color:#fff
+    style TagCheck fill:#0f3460,stroke:#533483,color:#fff
+    style Snapshot fill:#0f3460,stroke:#533483,color:#fff
+    style ReplayRec fill:#0f3460,stroke:#533483,color:#fff
+    style BGTick fill:#16213e,stroke:#0f3460,color:#fff
+    style TimeCheck fill:#16213e,stroke:#0f3460,color:#fff
+    style RoundLogic fill:#16213e,stroke:#0f3460,color:#fff
+    style Broadcast fill:#533483,stroke:#e94560,color:#fff
+    style Reducer fill:#533483,stroke:#e94560,color:#fff
+    style Canvas fill:#533483,stroke:#e94560,color:#fff
+    style AnimCtrl fill:#533483,stroke:#e94560,color:#fff
+    style SpriteCache fill:#533483,stroke:#e94560,color:#fff

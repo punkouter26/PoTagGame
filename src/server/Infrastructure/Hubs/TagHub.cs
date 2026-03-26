@@ -3,8 +3,6 @@ using TagGame.Domain;
 using TagGame.Features.Game;
 using TagGame.Features.Lobby;
 using TagGame.Features.Position;
-using TagGame.Features.Replay;
-using TagGame.Features.Tag;
 
 namespace TagGame.Infrastructure.Hubs;
 
@@ -21,30 +19,27 @@ namespace TagGame.Infrastructure.Hubs;
 ///
 /// Client → Server methods:  JoinLobby, UpdatePosition, StartGame
 /// Server → Client methods:  Joined, LobbyUpdated, GameStarted, StateUpdated,
-///                           Tagged, TimeTick, GameEnded, Error
+///                           TimeTick, GameEnded, Error
 /// </summary>
 public sealed class TagHub : Hub
 {
-    private readonly GameService            _game;
+    private readonly IGameService            _game;
     private readonly JoinLobbyHandler       _joinLobby;
     private readonly StartGameHandler       _startGame;
     private readonly UpdatePositionHandler  _updatePosition;
-    private readonly ReplayRecorder         _replay;
     private readonly ILogger<TagHub>        _logger;
 
     public TagHub(
-        GameService           game,
+        IGameService          game,
         JoinLobbyHandler      joinLobby,
         StartGameHandler      startGame,
         UpdatePositionHandler updatePosition,
-        ReplayRecorder        replay,
         ILogger<TagHub>       logger)
     {
         _game           = game;
         _joinLobby      = joinLobby;
         _startGame      = startGame;
         _updatePosition = updatePosition;
-        _replay         = replay;
         _logger         = logger;
     }
 
@@ -94,25 +89,15 @@ public sealed class TagHub : Hub
 
         var player = _joinLobby.Handle(Context.ConnectionId, new JoinLobbyRequest(name));
 
-        // If rejected because a game is already running (not because room is full),
-        // reset back to lobby so the new player — and any in-progress players — can all join.
         if (player is null)
         {
             var phase = _game.GetPhase();
-            if (phase == GamePhase.Playing || phase == GamePhase.Ended)
-            {
-                _logger.LogInformation(
-                    "JoinLobby: 2nd player joining while game {Phase} — resetting to lobby",
-                    phase);
-                _game.ResetToLobby();
-                player = _joinLobby.Handle(Context.ConnectionId, new JoinLobbyRequest(name));
-            }
-        }
-
-        if (player is null)
-        {
-            await Clients.Caller.SendAsync("Error",
-                new { message = "Cannot join: lobby is full." });
+            var message = phase == GamePhase.Playing
+                ? "A game is in progress — you'll be able to join when it ends."
+                : phase == GamePhase.Ended
+                ? "The round just ended — the lobby will reopen momentarily."
+                : "Cannot join: the lobby is full (max 8 players).";
+            await Clients.Caller.SendAsync("Error", new { message });
             return;
         }
 
@@ -127,11 +112,26 @@ public sealed class TagHub : Hub
     {
         if (_game.GetPhase() != GamePhase.Playing) return;
 
-        var accepted = _updatePosition.Handle(
+        var (accepted, tagLeaderboard) = _updatePosition.Handle(
             Context.ConnectionId,
             new UpdatePositionRequest(x, y, state, direction));
 
         if (!accepted) return;
+
+        // A tag ended the round \u2014 broadcast immediately from the hub thread
+        if (tagLeaderboard is not null)
+        {
+            var (round, total) = _game.GetRoundInfo();
+            if (round >= total)
+            {
+                await Clients.All.SendAsync("GameEnded", new GameEndedResponse(tagLeaderboard));
+            }
+            else
+            {
+                await Clients.All.SendAsync("RoundEnded", new RoundEndedResponse(tagLeaderboard, round, total));
+            }
+            return;
+        }
 
         await BroadcastStateAsync();
     }
@@ -149,16 +149,7 @@ public sealed class TagHub : Hub
             return;
         }
 
-        _replay.StartRound(response.ArenaId, response.ItId);
-
         await Clients.All.SendAsync("GameStarted", response);
-    }
-
-    /// <summary>Client requests the last round's replay data.</summary>
-    public async Task GetReplay()
-    {
-        var data = _replay.GetReplay();
-        await Clients.Caller.SendAsync("ReplayData", data);
     }
 
 

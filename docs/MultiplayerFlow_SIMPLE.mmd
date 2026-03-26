@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant P1 as Player 1
+    participant Server as Server
+    participant P2 as Player 2
+
+    P1->>Server: JoinLobby
+    P2->>Server: JoinLobby
+    Server->>P1: LobbyUpdated
+    Server->>P2: LobbyUpdated
+
+    P1->>Server: StartGame
+    Server->>P1: GameStarted
+    Server->>P2: GameStarted
+
+    loop Game Loop
+        P1->>Server: UpdatePosition
+        P2->>Server: UpdatePosition
+        Server->>P1: StateUpdated
+        Server->>P2: StateUpdated
+    end
+
+    Server->>P1: RoundEnded / GameEnded
+    Server->>P2: RoundEnded / GameEnded

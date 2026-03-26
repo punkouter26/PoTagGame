@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph Ingestion["Ingestion"]
+        Input["User Input\nKeyboard · Touch"]
+    end
+
+    subgraph Processing["Processing"]
+        Server["Server\nValidation · Tags · Collision"]
+    end
+
+    subgraph Egress["Egress"]
+        UI["Client Render\nCanvas 2D · 60 fps"]
+    end
+
+    Input -->|"SignalR 20 fps"| Server
+    Server -->|"Broadcast Snapshot"| UI
+
+    style Ingestion fill:#1a1a2e,stroke:#e94560,color:#fff
+    style Processing fill:#0f3460,stroke:#533483,color:#fff
+    style Egress fill:#533483,stroke:#e94560,color:#fff
+    style Input fill:#1a1a2e,stroke:#e94560,color:#fff
+    style Server fill:#0f3460,stroke:#533483,color:#fff
+    style UI fill:#533483,stroke:#e94560,color:#fff

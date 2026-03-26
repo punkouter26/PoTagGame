@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.SignalR;
 using TagGame.Domain;
 using TagGame.Features.Game;
 using TagGame.Features.Lobby;
-using TagGame.Features.Replay;
 using TagGame.Infrastructure.Hubs;
 
 namespace TagGame.Infrastructure.BackgroundServices;
@@ -18,69 +17,17 @@ namespace TagGame.Infrastructure.BackgroundServices;
 public sealed class GameBackgroundService : BackgroundService
 {
     private readonly IHubContext<TagHub> _hub;
-    private readonly GameService         _game;
-    private readonly ReplayRecorder      _replay;
+    private readonly IGameService        _game;
     private readonly ILogger<GameBackgroundService> _logger;
 
     public GameBackgroundService(
         IHubContext<TagHub>                     hub,
-        GameService                             game,
-        ReplayRecorder                          replay,
+        IGameService                            game,
         ILogger<GameBackgroundService>          logger)
     {
         _hub    = hub;
         _game   = game;
-        _replay = replay;
         _logger = logger;
-
-        _game.RoundEndedByTag += OnRoundEndedByTag;
-    }
-
-    public override void Dispose()
-    {
-        _game.RoundEndedByTag -= OnRoundEndedByTag;
-        base.Dispose();
-    }
-
-    // ── Tag-touch round-end handler ───────────────────────────────────────
-
-    private void OnRoundEndedByTag(List<PlayerSnapshot> leaderboard)
-    {
-        // Fire-and-forget: called while GameService lock is held, cannot await here
-        _ = HandleRoundEndedByTagAsync(leaderboard);
-    }
-
-    private async Task HandleRoundEndedByTagAsync(List<PlayerSnapshot> leaderboard)
-    {
-        try
-        {
-            _logger.LogInformation("Round ended by tag — broadcasting GameEnded then restarting");
-
-            await _hub.Clients.All.SendAsync("GameEnded", new GameEndedResponse(leaderboard));
-
-            await Task.Delay(2_000);
-
-            var result = _game.RestartRound();
-            if (result is null)
-            {
-                _logger.LogInformation("RestartRound returned null (no players remain)");
-                return;
-            }
-
-            var (itId, players, remaining) = result.Value;
-
-            _replay.StartRound(_game.GetArenaId(), itId);
-
-            await _hub.Clients.All.SendAsync(
-                "GameStarted",
-                new GameStartedResponse(players, itId, remaining, _game.GetArenaId()));
-
-            _logger.LogInformation("New round started after tag; IT={ItId}", itId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error restarting round after tag");
-        }
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -97,9 +44,6 @@ public sealed class GameBackgroundService : BackgroundService
                 {
                     var remaining = _game.GetRemainingSeconds();
 
-                    // Record replay frame every tick (~1 fps)
-                    _replay.RecordFrame(_game.GetSnapshot());
-
                     await _hub.Clients.All.SendAsync(
                         "TimeTick",
                         new TimeTickResponse(remaining),
@@ -107,26 +51,94 @@ public sealed class GameBackgroundService : BackgroundService
 
                     if (remaining <= 0)
                     {
-                        _logger.LogInformation("Round timer expired — ending game");
+                        _logger.LogInformation("Round timer expired — ending round");
                         var leaderboard = _game.EndGame();
 
-                        await _hub.Clients.All.SendAsync(
-                            "GameEnded",
-                            new GameEndedResponse(leaderboard),
-                            stoppingToken);
+                        if (leaderboard is not null)
+                        {
+                            var (round, total) = _game.GetRoundInfo();
+                            if (round >= total)
+                            {
+                                // Session complete — final leaderboard
+                                await _hub.Clients.All.SendAsync(
+                                    "GameEnded",
+                                    new GameEndedResponse(leaderboard),
+                                    stoppingToken);
 
-                        // Auto-reset to Lobby so the next player who joins (or
-                        // clicks Play Again) doesn't hit the Ended-phase rejection.
-                        // A short delay lets clients process GameEnded first.
-                        await Task.Delay(3_000, stoppingToken);
+                                await Task.Delay(8_000, stoppingToken);
+                                _game.ResetToLobby();
+                                _logger.LogInformation("Session complete — room reset to Lobby");
+
+                                var (lobbyPlayers, canStart) = _game.GetLobbyState();
+                                await _hub.Clients.All.SendAsync(
+                                    "LobbyUpdated",
+                                    new LobbyUpdatedResponse(lobbyPlayers, canStart),
+                                    stoppingToken);
+                            }
+                            else
+                            {
+                                // Mid-session round end — brief pause then next round
+                                await _hub.Clients.All.SendAsync(
+                                    "RoundEnded",
+                                    new RoundEndedResponse(leaderboard, round, total),
+                                    stoppingToken);
+
+                                await Task.Delay(3_000, stoppingToken);
+                                var result = _game.RestartRound();
+                                if (result is not null)
+                                {
+                                    var (itId, players, nextRemaining) = result.Value;
+                                    var (r2, t2) = _game.GetRoundInfo();
+                                    await _hub.Clients.All.SendAsync(
+                                        "GameStarted",
+                                        new GameStartedResponse(players, itId, nextRemaining, _game.GetArenaId(), r2, t2),
+                                        stoppingToken);
+                                    _logger.LogInformation("Round {Round}/{Total} started after timer; IT={ItId}", r2, t2, itId);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ── Tag-based round restart ───────────────────────────────────
+                // CheckTags (running on a hub thread) sets a flag when a tag ends
+                // the round.  We pick it up here to restart after a short delay,
+                // completely outside the GameService lock.
+                if (_game.ConsumePendingRestart())
+                {
+                    var (round, total) = _game.GetRoundInfo();
+                    if (round >= total)
+                    {
+                        // Session over — TagHub already broadcast GameEnded
+                        _logger.LogInformation("Session complete after tag — resetting to Lobby");
+                        await Task.Delay(8_000, stoppingToken);
                         _game.ResetToLobby();
-                        _logger.LogInformation("Room auto-reset to Lobby after round end");
 
                         var (lobbyPlayers, canStart) = _game.GetLobbyState();
                         await _hub.Clients.All.SendAsync(
                             "LobbyUpdated",
                             new LobbyUpdatedResponse(lobbyPlayers, canStart),
                             stoppingToken);
+                    }
+                    else
+                    {
+                        // More rounds — TagHub already broadcast RoundEnded
+                        _logger.LogInformation("Tag restart pending — waiting 3 s then starting round");
+                        await Task.Delay(3_000, stoppingToken);
+
+                        var result = _game.RestartRound();
+                        if (result is not null)
+                        {
+                            var (itId, players, remaining) = result.Value;
+                            var (r2, t2) = _game.GetRoundInfo();
+
+                            await _hub.Clients.All.SendAsync(
+                                "GameStarted",
+                                new GameStartedResponse(players, itId, remaining, _game.GetArenaId(), r2, t2),
+                                stoppingToken);
+
+                            _logger.LogInformation("Round {Round}/{Total} started after tag; IT={ItId}", r2, t2, itId);
+                        }
                     }
                 }
 

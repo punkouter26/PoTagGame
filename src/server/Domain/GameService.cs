@@ -3,14 +3,14 @@ namespace TagGame.Domain;
 /// <summary>
 /// Thread-safe singleton that owns the single game room.
 ///
-/// Design: Strategy pattern for tag-radius checking; Observer pattern via
-/// the <see cref="TagOccurred"/> event that allows the hub to react without
-/// coupling GameService → SignalR directly.
+/// Design: Strategy pattern for tag-radius checking; polling pattern via
+/// <see cref="ConsumePendingRestart"/> so the background service can react
+/// without coupling GameService → SignalR directly.
 ///
 /// All mutating methods acquire <see cref="_lock"/> to ensure safe concurrent
 /// access from multiple SignalR connection threads.
 /// </summary>
-public sealed class GameService
+public sealed class GameService : IGameService
 {
     // ── Constants / spawn configuration ──────────────────────────────────
     private static readonly (float X, float Y)[] Spawns =
@@ -24,12 +24,11 @@ public sealed class GameService
     private readonly GameRoom _room = new();
     private readonly ILogger<GameService> _logger;
 
-    // ── Observer: raised when a tag touch ends the round ──────────────────
-    /// <summary>Raised when a player is tagged, ending the round immediately.</summary>
-    public event Action<List<PlayerSnapshot>>? RoundEndedByTag;
-
     /// <summary>Tracks which player becomes IT for the next round (set by CheckTags).</summary>
     private string? _pendingItId;
+
+    /// <summary>Set by CheckTags when a tag ends the round; consumed by the background service.</summary>
+    private bool _pendingRestart;
 
     public GameService(ILogger<GameService> logger)
     {
@@ -51,6 +50,11 @@ public sealed class GameService
     public string GetArenaId()
     {
         lock (_lock) { return _room.ArenaId; }
+    }
+
+    public (int CurrentRound, int TotalRounds) GetRoundInfo()
+    {
+        lock (_lock) { return (_room.CurrentRound, _room.TotalRounds); }
     }
 
     /// <summary>Returns a JSON-safe snapshot list; acquires lock internally.</summary>
@@ -163,13 +167,14 @@ public sealed class GameService
     /// <summary>
     /// Called ~20 fps by each client with their current world position.
     /// Updates state and checks for proximity-based tag collisions.
+    /// Returns the leaderboard if a tag ended the round; null otherwise.
     /// </summary>
-    public void UpdatePosition(string connectionId, float x, float y, string state, string direction)
+    public List<PlayerSnapshot>? UpdatePosition(string connectionId, float x, float y, string state, string direction)
     {
         lock (_lock)
         {
             var p = FindByConnId(connectionId);
-            if (p is null) return;
+            if (p is null) return null;
 
             // Validate against arena walls — if new position collides, keep old position
             var arena = ArenaDefinition.Get(_room.ArenaId);
@@ -182,7 +187,8 @@ public sealed class GameService
             p.State     = state;
             p.Direction = direction;
 
-            if (_room.Phase == GamePhase.Playing) CheckTags(p);
+            if (_room.Phase == GamePhase.Playing) return CheckTags(p);
+            return null;
         }
     }
 
@@ -199,6 +205,8 @@ public sealed class GameService
             if (_room.Players.Count < 1) return null;
 
             _room.ArenaId = ArenaDefinition.All.ContainsKey(arenaId) ? arenaId : "grassland";
+            _room.TotalRounds  = GameRoom.CalculateRounds(_room.Players.Count);
+            _room.CurrentRound = 1;
 
             foreach (var p in _room.Players.Values)
             {
@@ -207,12 +215,14 @@ public sealed class GameService
                 p.ImmuneUntil = 0;
             }
 
+            var arena   = ArenaDefinition.Get(_room.ArenaId);
             var players = _room.Players.Values.ToArray();
             for (int i = 0; i < players.Length; i++)
             {
                 var sp = Spawns[i % Spawns.Length];
-                players[i].X = sp.X;
-                players[i].Y = sp.Y;
+                var safe = FindSafeSpawn(sp.X, sp.Y, arena);
+                players[i].X = safe.X;
+                players[i].Y = safe.Y;
             }
 
             var it = players[Random.Shared.Next(players.Length)];
@@ -228,9 +238,21 @@ public sealed class GameService
     }
 
     /// <summary>Ends the game, finalises IT times, returns sorted leaderboard.</summary>
-    public List<PlayerSnapshot> EndGame()
+    /// <returns>The leaderboard, or null if the game was already ended.</returns>
+    public List<PlayerSnapshot>? EndGame()
     {
         lock (_lock) { return EndGameLocked(); }
+    }
+
+    /// <inheritdoc />
+    public bool ConsumePendingRestart()
+    {
+        lock (_lock)
+        {
+            if (!_pendingRestart) return false;
+            _pendingRestart = false;
+            return true;
+        }
     }
 
     /// <summary>Resets the room back to Lobby so players can play again.</summary>
@@ -240,6 +262,8 @@ public sealed class GameService
         {
             _room.Phase        = GamePhase.Lobby;
             _room.RoundStartMs = 0;
+            _room.CurrentRound = 0;
+            _room.TotalRounds  = 3;
             foreach (var p in _room.Players.Values)
             {
                 p.IsIt        = false;
@@ -253,16 +277,11 @@ public sealed class GameService
 
     // ── Private helpers ───────────────────────────────────────────────────
 
-    private List<PlayerSnapshot> EndGameLocked()
+    private List<PlayerSnapshot>? EndGameLocked()
     {
-        // Idempotent guard: if already ended (e.g. timer and tag race), return current state.
-        if (_room.Phase == GamePhase.Ended)
-        {
-            return _room.Players.Values
-                .OrderBy(p => p.ItDuration)
-                .Select(PlayerSnapshot.From)
-                .ToList();
-        }
+        // Idempotent guard: if already ended (e.g. timer and tag race), return null
+        // so the caller knows it was a no-op and skips duplicate broadcasts.
+        if (_room.Phase == GamePhase.Ended) return null;
 
         var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         foreach (var p in _room.Players.Values)
@@ -288,37 +307,22 @@ public sealed class GameService
     /// Proximity tag check — called on every position update while playing.
     /// When IT touches a player the round ends immediately; the touched player
     /// becomes IT for the next round.  Must be called while <see cref="_lock"/> is held.
+    /// Returns the leaderboard if a tag ended the round; null otherwise.
     /// </summary>
-    private void CheckTags(Player mover)
+    private List<PlayerSnapshot>? CheckTags(Player mover)
     {
-        if (!mover.IsIt) return;
+        var taggedId = TagChecker.FindTaggedPlayer(mover, _room.Players.Values, GameRoom.TagRadius);
+        if (taggedId is null) return null;
 
-        var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        if (nowMs < mover.ImmuneUntil) return;
+        var target = _room.Players[taggedId];
+        _logger.LogInformation("Tag: {OldIt} touched {Target} — ending round",
+            mover.Name, target.Name);
 
-        foreach (var target in _room.Players.Values)
-        {
-            if (target.Id == mover.Id) continue;
-            if (nowMs < target.ImmuneUntil) continue;
+        _pendingItId = taggedId;
 
-            var dx   = mover.X - target.X;
-            var dy   = mover.Y - target.Y;
-            var dist = MathF.Sqrt(dx * dx + dy * dy);
-
-            if (dist <= GameRoom.TagRadius)
-            {
-                _logger.LogInformation("Tag: {OldIt} touched {Target} (dist={Dist:F1}px) — ending round",
-                    mover.Name, target.Name, dist);
-
-                // Remember who becomes IT next round (the player who was tagged)
-                _pendingItId = target.Id;
-
-                // End the round and notify the background service to handle restart
-                var leaderboard = EndGameLocked();
-                RoundEndedByTag?.Invoke(leaderboard);
-                return;
-            }
-        }
+        var leaderboard = EndGameLocked();
+        if (leaderboard is not null) _pendingRestart = true;
+        return leaderboard;
     }
 
     /// <summary>
@@ -341,55 +345,76 @@ public sealed class GameService
                         : players[Random.Shared.Next(players.Length)];
             _pendingItId = null;
 
-            // Reset all players
+            // Reset round state but preserve accumulated ItDuration across rounds
             foreach (var p in players)
             {
                 p.IsIt        = false;
-                p.ItDuration  = 0;
                 p.ImmuneUntil = 0;
                 p.ItSince     = 0;
             }
 
             // IT spawns right-center; non-IT players spread on left side
-            newIt.X = 1080f;
-            newIt.Y = 360f;
+            var arena = ArenaDefinition.Get(_room.ArenaId);
+            var itSpawn = FindSafeSpawn(1080f, 360f, arena);
+            newIt.X = itSpawn.X;
+            newIt.Y = itSpawn.Y;
 
             var nonIt = players.Where(p => p.Id != newIt.Id).ToArray();
             float[] ys = [180f, 300f, 420f, 540f];
             for (int i = 0; i < nonIt.Length; i++)
             {
-                nonIt[i].X = 200f;
-                nonIt[i].Y = nonIt.Length == 1 ? 360f : ys[i % ys.Length];
+                var rawY = nonIt.Length == 1 ? 360f : ys[i % ys.Length];
+                var safe = FindSafeSpawn(200f, rawY, arena);
+                nonIt[i].X = safe.X;
+                nonIt[i].Y = safe.Y;
             }
 
             BecomeIt(newIt);
 
             _room.Phase        = GamePhase.Playing;
             _room.RoundStartMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _room.CurrentRound++;
 
-            _logger.LogInformation("Round restarted; IT={Name}; players={Count}",
-                newIt.Name, players.Length);
+            _logger.LogInformation("Round {Round}/{Total} started; IT={Name}; players={Count}",
+                _room.CurrentRound, _room.TotalRounds, newIt.Name, players.Length);
 
             var snapshot = _room.Players.Values.Select(PlayerSnapshot.From).ToList();
             return (newIt.Id, snapshot, _room.RemainingSeconds());
         }
     }
 
-    /// <summary>Assigns IT to <paramref name="player"/>, recording the start time.</summary>
-    private static void BecomeIt(Player player)
-    {
-        player.IsIt        = true;
-        player.ItSince     = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        player.ImmuneUntil = player.ItSince + GameRoom.ImmunityMs;
-    }
+    private static void BecomeIt(Player player) => TagChecker.BecomeIt(player);
 
     private Player? FindByConnId(string connId) =>
         _room.Players.Values.FirstOrDefault(p => p.ConnectionId == connId);
 
-    /// <summary>Trims and truncates player names; prevents XSS via HTML injection.</summary>
+    /// <summary>Trims, truncates, and strips HTML-sensitive characters from player names.</summary>
     private static string SanitiseName(string raw)
     {
-        var trimmed = raw.Trim();
-        return trimmed.Length > 20 ? trimmed[..20] : trimmed.Length == 0 ? "Player" : trimmed;
+        // Strip < and > to prevent any downstream XSS if names are rendered in raw HTML.
+        var cleaned = raw.Replace("<", "").Replace(">", "").Trim();
+        return cleaned.Length > 20 ? cleaned[..20] : cleaned.Length == 0 ? "Player" : cleaned;
+    }
+
+    /// <summary>Returns the requested position if it doesn't collide with walls, or a nearby safe position.</summary>
+    private static (float X, float Y) FindSafeSpawn(float x, float y, ArenaDefinition arena)
+    {
+        if (!arena.CollidesWithWall(x, y, 16f)) return (x, y);
+
+        // Spiral outward searching for a non-colliding position
+        for (float offset = 48f; offset <= 200f; offset += 32f)
+        {
+            float[] deltas = [-offset, 0f, offset];
+            foreach (var dx in deltas)
+            foreach (var dy in deltas)
+            {
+                if (dx == 0f && dy == 0f) continue;
+                var nx = Math.Clamp(x + dx, 32f, 1248f);
+                var ny = Math.Clamp(y + dy, 32f, 688f);
+                if (!arena.CollidesWithWall(nx, ny, 16f))
+                    return (nx, ny);
+            }
+        }
+        return (640f, 360f); // center fallback
     }
 }

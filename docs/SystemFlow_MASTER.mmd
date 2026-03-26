@@ -1,0 +1,100 @@
+flowchart TB
+    %% ── Connection & Auth ──
+    subgraph AuthFlow["Connection Flow (Anonymous Auth)"]
+        Open["User Opens Browser"]
+        SRBuild["HubConnectionBuilder\nwithUrl /tagHub\nwithAutomaticReconnect"]
+        ConnStart["connection.start()\nRetry 5× with backoff"]
+        ConnOK{{"Connected?"}}
+        Online["isOnline = true\nUI: Connected Badge"]
+        Offline["isOnline = false\nUI: Offline Mode"]
+    end
+
+    Open --> SRBuild --> ConnStart --> ConnOK
+    ConnOK -->|"Yes"| Online
+    ConnOK -->|"No (5 retries failed)"| Offline
+
+    %% ── Lobby CRUD ──
+    subgraph LobbyFlow["Lobby Phase"]
+        EnterName["Enter Player Name"]
+        JoinRPC["JoinLobby(name)\nServer: validate + assign ID"]
+        Joined["Joined Event\nplayerId · colorIdx"]
+        LobbyUpdate["LobbyUpdated Broadcast\nplayers[] · canStart"]
+        AutoCount["Auto-Start Countdown\n5s if 2+ players"]
+        StartBtn["Start Game Button\nor Auto-Start fires"]
+    end
+
+    Online --> EnterName --> JoinRPC --> Joined --> LobbyUpdate
+    LobbyUpdate -->|"2+ players"| AutoCount --> StartBtn
+    LobbyUpdate -->|"1 player"| StartBtn
+
+    %% ── Game CRUD ──
+    subgraph GameFlow["Playing Phase"]
+        StartRPC["StartGame(arenaId)\nServer: random IT · spawn positions"]
+        GameStarted["GameStarted Broadcast\nplayers · itId · arena · timer"]
+        GameLoop["Game Loop\nInput → Move → Send Position\nReceive → Render · 60 fps"]
+        TagEvent["Tag Detected\n40px radius · immunity check"]
+        TimerTick["TimeTick Broadcast\nremainingSeconds (1 Hz)"]
+    end
+
+    StartBtn --> StartRPC --> GameStarted --> GameLoop
+    GameLoop -->|"Tag occurs"| TagEvent -->|"Continue"| GameLoop
+    GameLoop --> TimerTick -->|"Display countdown"| GameLoop
+
+    %% ── Round / Session End ──
+    subgraph EndFlow["End Phase"]
+        RoundEnd["RoundEnded Broadcast\nleaderboard · round N/M"]
+        NextRound{{"More Rounds?"}}
+        GameEnd["GameEnded Broadcast\nFinal Leaderboard"]
+        PlayAgain["Play Again Button\nor 10s auto-reset"]
+        ResetLobby["ResetToLobby\nLobbyUpdated Broadcast"]
+    end
+
+    TimerTick -->|"Time expired"| RoundEnd
+    TagEvent -->|"Round limit hit"| RoundEnd
+    RoundEnd --> NextRound
+    NextRound -->|"Yes (3s delay)"| StartRPC
+    NextRound -->|"No (final round)"| GameEnd --> PlayAgain --> ResetLobby --> LobbyUpdate
+
+    %% ── Disconnect Recovery ──
+    subgraph DisconnectFlow["Disconnect Recovery"]
+        Disconnect["Connection Lost\nonclose / onreconnecting"]
+        Reconnecting["Reconnecting...\nExponential Backoff (max 30s)"]
+        Reconnected["onreconnected\nResume session"]
+    end
+
+    GameLoop -->|"Network drop"| Disconnect --> Reconnecting
+    Reconnecting -->|"Success"| Reconnected --> GameLoop
+    Reconnecting -->|"Failed"| Offline
+
+    %% ── Styles ──
+    style AuthFlow fill:#1a1a2e,stroke:#e94560,color:#fff
+    style LobbyFlow fill:#16213e,stroke:#0f3460,color:#fff
+    style GameFlow fill:#0f3460,stroke:#533483,color:#fff
+    style EndFlow fill:#533483,stroke:#e94560,color:#fff
+    style DisconnectFlow fill:#2c2c3a,stroke:#e94560,color:#fff
+
+    style Open fill:#1a1a2e,stroke:#e94560,color:#fff
+    style SRBuild fill:#1a1a2e,stroke:#e94560,color:#fff
+    style ConnStart fill:#1a1a2e,stroke:#e94560,color:#fff
+    style ConnOK fill:#1a1a2e,stroke:#e94560,color:#fff
+    style Online fill:#2ecc71,stroke:#1a1a2e,color:#000
+    style Offline fill:#e74c3c,stroke:#1a1a2e,color:#fff
+    style EnterName fill:#16213e,stroke:#0f3460,color:#fff
+    style JoinRPC fill:#16213e,stroke:#0f3460,color:#fff
+    style Joined fill:#16213e,stroke:#0f3460,color:#fff
+    style LobbyUpdate fill:#16213e,stroke:#0f3460,color:#fff
+    style AutoCount fill:#16213e,stroke:#0f3460,color:#fff
+    style StartBtn fill:#16213e,stroke:#0f3460,color:#fff
+    style StartRPC fill:#0f3460,stroke:#533483,color:#fff
+    style GameStarted fill:#0f3460,stroke:#533483,color:#fff
+    style GameLoop fill:#0f3460,stroke:#533483,color:#fff
+    style TagEvent fill:#e94560,stroke:#1a1a2e,color:#fff
+    style TimerTick fill:#0f3460,stroke:#533483,color:#fff
+    style RoundEnd fill:#533483,stroke:#e94560,color:#fff
+    style NextRound fill:#533483,stroke:#e94560,color:#fff
+    style GameEnd fill:#533483,stroke:#e94560,color:#fff
+    style PlayAgain fill:#533483,stroke:#e94560,color:#fff
+    style ResetLobby fill:#533483,stroke:#e94560,color:#fff
+    style Disconnect fill:#2c2c3a,stroke:#e74c3c,color:#fff
+    style Reconnecting fill:#2c2c3a,stroke:#e74c3c,color:#fff
+    style Reconnected fill:#2ecc71,stroke:#1a1a2e,color:#000

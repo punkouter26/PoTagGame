@@ -1,11 +1,14 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type * as signalR from '@microsoft/signalr';
 import type { GameState, PlayerSnapshot } from '@/types/game';
 import { AnimationController } from '@/engine/AnimationController';
 import { InputHandler } from '@/engine/InputHandler';
 import { SpriteLoader } from '@/engine/SpriteLoader';
 import { SPRITE_SIZE, PLAYER_COLORS } from '@/constants/sprites';
-import { getArenaById, type Wall } from '@/constants/arenas';
+import { getArenaById } from '@/constants/arenas';
+import { drawMiniMap } from './drawMiniMap';
+import { useTouchControls } from './useTouchControls';
+import { GameHUD } from './GameHUD';
 
 const CANVAS_W = 1280;
 const CANVAS_H = 720;
@@ -21,6 +24,11 @@ interface GameCanvasProps {
   onLeave:    () => void;
 }
 
+/** Detect touch device */
+function isTouchDevice(): boolean {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+}
+
 /**
  * GameCanvas — the main rendering surface.
  *
@@ -32,6 +40,11 @@ interface GameCanvasProps {
  */
 export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [showTouch] = useState(isTouchDevice);
+  const [showHint, setShowHint] = useState(() => !localStorage.getItem('controls-seen'));
+
+  // Touch controls extracted to useTouchControls hook
+  const { dirRef: touchDirRef, punchRef: touchPunchRef, handleTouchStart, handleTouchMove, handleTouchEnd } = useTouchControls();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -60,9 +73,6 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
     // ── Arena ────────────────────────────────────────────────────────────
     const arena = getArenaById(gameState.arenaId);
 
-    // ── Grass pattern (only for grassland) ───────────────────────────────
-    const grassPattern = arena.id === 'grassland' ? buildGrassPattern() : null;
-
     /** Check circle vs arena walls collision */
     function collidesWithWalls(cx: number, cy: number, radius: number): boolean {
       for (const w of arena.walls) {
@@ -82,13 +92,42 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
       lastTime    = now;
       sendTimer  += delta;
 
+      // ── Merge keyboard + touch input ────────────────────────────────
+      const td = touchDirRef.current;
+      const touchLeft  = td.dx < -0.3;
+      const touchRight = td.dx >  0.3;
+      const touchUp    = td.dy < -0.3;
+      const touchDown  = td.dy >  0.3;
+
+      const moveLeft  = input.left  || touchLeft;
+      const moveRight = input.right || touchRight;
+      const moveUp    = input.up    || touchUp;
+      const moveDown  = input.down  || touchDown;
+      const isPunch   = input.punch || touchPunchRef.current;
+
+      // Compute aggregated state/direction for touch + keyboard
+      let aggregatedState = 'IDLE';
+      let aggregatedDir   = input.direction; // default from keyboard
+      if (isPunch)   aggregatedState = 'PUNCH';
+      else if (moveUp || moveDown || moveLeft || moveRight) aggregatedState = 'WALK';
+
+      if (touchUp)         aggregatedDir = 'north';
+      else if (touchDown)  aggregatedDir = 'south';
+      else if (touchLeft)  aggregatedDir = 'west';
+      else if (touchRight) aggregatedDir = 'east';
+
+      // Override with keyboard direction if keyboard is active
+      if (input.up || input.down || input.left || input.right) {
+        aggregatedDir = input.direction;
+      }
+
       // ── Move local player ───────────────────────────────────────────
       let newX = localX;
       let newY = localY;
-      if (input.left)  newX = Math.max(SPRITE_SIZE / 2, newX - SPEED);
-      if (input.right) newX = Math.min(CANVAS_W - SPRITE_SIZE / 2, newX + SPEED);
-      if (input.up)    newY = Math.max(SPRITE_SIZE / 2 + HUD_TOP, newY - SPEED);
-      if (input.down)  newY = Math.min(CANVAS_H - SPRITE_SIZE / 2 - HUD_BOT, newY + SPEED);
+      if (moveLeft)  newX = Math.max(SPRITE_SIZE / 2, newX - SPEED);
+      if (moveRight) newX = Math.min(CANVAS_W - SPRITE_SIZE / 2, newX + SPEED);
+      if (moveUp)    newY = Math.max(SPRITE_SIZE / 2 + HUD_TOP, newY - SPEED);
+      if (moveDown)  newY = Math.min(CANVAS_H - SPRITE_SIZE / 2 - HUD_BOT, newY + SPEED);
 
       // Try X then Y independently so player can slide along walls
       if (!collidesWithWalls(newX, localY, SPRITE_SIZE / 2)) {
@@ -102,17 +141,13 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
       if (isOnline && connection && sendTimer >= 1 / SEND_HZ && gameState.myId) {
         sendTimer = 0;
         void connection
-          .invoke('UpdatePosition', localX, localY, input.state, input.direction)
+          .invoke('UpdatePosition', localX, localY, aggregatedState, aggregatedDir)
           .catch((e) => console.warn('[GameCanvas] UpdatePosition failed', e));
       }
 
       // ── Draw ────────────────────────────────────────────────────────
       // Background
-      if (grassPattern) {
-        ctx.fillStyle = grassPattern;
-      } else {
-        ctx.fillStyle = arena.bgColor;
-      }
+      ctx.fillStyle = arena.bgColor;
       ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
       // Arena walls
@@ -142,8 +177,8 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
           colorIdx:    0,
           x:           localX,
           y:           localY,
-          state:       input.state,
-          direction:   input.direction,
+          state:       aggregatedState,
+          direction:   aggregatedDir,
           isIt:        true,
           itDuration:  0,
           immuneUntil: 0,
@@ -152,8 +187,8 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
 
       for (const p of renderPlayers) {
         const anim  = getAnim(p.id);
-        const state = p.id === gameState.myId ? input.state    : p.state;
-        const dir   = p.id === gameState.myId ? input.direction : p.direction;
+        const state = p.id === gameState.myId ? aggregatedState : p.state;
+        const dir   = p.id === gameState.myId ? aggregatedDir   : p.direction;
         anim.update(state, delta);
 
         const img = SpriteLoader.get({
@@ -207,7 +242,7 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
         }
 
         // Punch flash effect
-        if (p.id === gameState.myId && input.punch) {
+        if (p.id === gameState.myId && isPunch) {
           ctx.save();
           const flashGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, SPRITE_SIZE * 1.2);
           flashGrad.addColorStop(0, 'rgba(255, 255, 200, 0.35)');
@@ -219,6 +254,13 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
           ctx.restore();
         }
       }
+
+      // ── Mini-map ──────────────────────────────────────────────────
+      drawMiniMap({
+        ctx, arena, players: renderPlayers,
+        myId: gameState.myId, itId: gameState.itId,
+        canvasW: CANVAS_W, canvasH: CANVAS_H, now,
+      });
     }
 
     rafId = requestAnimationFrame(render);
@@ -235,41 +277,38 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
   return (
     <div className="bg-black flex items-center justify-center h-screen overflow-hidden">
 
-      {/* Canvas + HUD wrapper — preserves 16:9 and contains all overlays */}
+      {/* #7 — Canvas + HUD wrapper — fills viewport width, maintains 16:9 */}
       <div
-        className="relative w-full"
-        style={{ maxWidth: CANVAS_W, aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
+        className="relative w-full h-full max-h-screen"
+        style={{ maxWidth: `${(window.innerHeight / CANVAS_H) * CANVAS_W}px`, aspectRatio: `${CANVAS_W} / ${CANVAS_H}`, margin: '0 auto' }}
       >
-        {/* HUD overlay — now relative to the canvas, not the screen */}
-        <div className="absolute top-2 left-0 right-0 flex justify-between px-4 z-10 pointer-events-none">
-          <span
-            data-testid="timer"
-            className="bg-black/60 text-white px-3 py-1 rounded font-mono text-lg"
-          >
-            {gameState.remainingSeconds}s
-          </span>
+        <GameHUD gameState={gameState} onLeave={onLeave} />
 
-          {gameState.itId && (
-            <span
-              data-testid="it-badge"
-              className="bg-red-600 text-white px-3 py-1 rounded font-bold"
-            >
-              {gameState.itId === gameState.myId
-                ? 'YOU ARE IT!'
-                : `IT: ${gameState.players.find((p) => p.id === gameState.itId)?.name ?? '?'}`}
-            </span>
-          )}
-        </div>
-
-        {/* Leave Game button */}
-        <div className="absolute bottom-3 right-3 z-10">
-          <button
-            onClick={onLeave}
-            className="bg-gray-800/80 hover:bg-gray-700 text-white text-sm px-3 py-1 rounded border border-gray-600"
+        {/* One-time controls hint overlay */}
+        {showHint && (
+          <div
+            className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-sm cursor-pointer"
+            onClick={() => { localStorage.setItem('controls-seen', '1'); setShowHint(false); }}
+            onKeyDown={(e) => { if (e.key) { localStorage.setItem('controls-seen', '1'); setShowHint(false); } }}
+            role="button"
+            tabIndex={0}
           >
-            Leave Game
-          </button>
-        </div>
+            <div className="glass-card rounded-2xl px-8 py-6 text-center space-y-3 animate-scale-in pointer-events-none">
+              <h3 className="text-white font-bold text-lg">Controls</h3>
+              <div className="flex gap-6 justify-center text-gray-300 text-sm">
+                <span className="flex items-center gap-2">
+                  <kbd className="px-2 py-1 rounded bg-white/10 text-white font-mono text-xs">WASD</kbd>
+                  Move
+                </span>
+                <span className="flex items-center gap-2">
+                  <kbd className="px-2 py-1 rounded bg-white/10 text-white font-mono text-xs">Space</kbd>
+                  Punch
+                </span>
+              </div>
+              <p className="text-gray-500 text-xs">Click or press any key to start</p>
+            </div>
+          </div>
+        )}
 
         <canvas
           ref={canvasRef}
@@ -280,31 +319,19 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
           aria-label="Tag game canvas"
         />
       </div>
+
+      {/* #10 — Mobile swipe controls: drag to move, tap to punch */}
+      {showTouch && (
+        <div
+          className="touch-control fixed inset-0 z-20"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+        />
+      )}
     </div>
   );
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Builds a simple procedural grass tile via an off-screen canvas. */
-function buildGrassPattern(): CanvasPattern | null {
-  const size = 64;
-  const off  = document.createElement('canvas');
-  off.width  = size;
-  off.height = size;
-  const c    = off.getContext('2d')!;
-
-  c.fillStyle = '#4a7c59';
-  c.fillRect(0, 0, size, size);
-
-  // Scatter lighter blades
-  c.fillStyle = 'rgba(255,255,255,0.08)';
-  for (let i = 0; i < 30; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    c.fillRect(x, y, 1 + Math.random(), 3 + Math.random() * 4);
-  }
-
-  const ctx2 = document.createElement('canvas').getContext('2d')!;
-  return ctx2.createPattern(off, 'repeat');
-}

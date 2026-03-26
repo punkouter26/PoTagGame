@@ -1,0 +1,23 @@
+flowchart LR
+    subgraph Edge["Edge Delivery"]
+        Browser["Browser + React SPA"]
+    end
+
+    subgraph Compute["Compute Tier"]
+        Server["ASP.NET Core 10\nSignalR + Background Timer"]
+    end
+
+    subgraph Data["Data Persistence"]
+        State["In-Memory Game State"]
+    end
+
+    Browser -->|"WSS · SignalR"| Server
+    Server -->|"Broadcasts"| Browser
+    Server -->|"Read / Write"| State
+
+    style Edge fill:#16213e,stroke:#0f3460,color:#fff
+    style Compute fill:#0f3460,stroke:#533483,color:#fff
+    style Data fill:#533483,stroke:#e94560,color:#fff
+    style Browser fill:#16213e,stroke:#0f3460,color:#fff
+    style Server fill:#0f3460,stroke:#533483,color:#fff
+    style State fill:#533483,stroke:#e94560,color:#fff

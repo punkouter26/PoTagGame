@@ -18,7 +18,7 @@ public sealed record UpdatePositionRequest(
 /// Validates input, delegates to GameService, and returns the updated snapshot.
 /// Input validation guards (SOLID: SRP — validation lives here, not in the hub).
 /// </summary>
-public sealed class UpdatePositionHandler(GameService game, ILogger<UpdatePositionHandler> logger)
+public sealed class UpdatePositionHandler(IGameService game, ILogger<UpdatePositionHandler> logger)
 {
     private static readonly float   CanvasW    = 1280f;
     private static readonly float   CanvasH    = 720f;
@@ -27,9 +27,10 @@ public sealed class UpdatePositionHandler(GameService game, ILogger<UpdatePositi
 
     /// <summary>
     /// Validates and applies the position update.
-    /// Returns false if the update was rejected (hub should log but not broadcast).
+    /// Returns (false, null) if rejected; (true, leaderboard) if a tag ended the round;
+    /// (true, null) for a normal accepted update.
     /// </summary>
-    public bool Handle(string connectionId, UpdatePositionRequest req)
+    public (bool Accepted, List<PlayerSnapshot>? TagLeaderboard) Handle(string connectionId, UpdatePositionRequest req)
     {
         // Guard: clamp coordinates to canvas bounds
         if (req.X is < 0 or > 1280 || req.Y is < 0 or > 720)
@@ -44,7 +45,7 @@ public sealed class UpdatePositionHandler(GameService game, ILogger<UpdatePositi
             logger.LogWarning(
                 "UpdatePosition rejected for connId={ConnId}: invalid state '{State}'",
                 connectionId, req.State);
-            return false;
+            return (false, null);
         }
 
         if (!ValidDirections.Contains(req.Direction))
@@ -52,13 +53,13 @@ public sealed class UpdatePositionHandler(GameService game, ILogger<UpdatePositi
             logger.LogWarning(
                 "UpdatePosition rejected for connId={ConnId}: invalid direction '{Dir}'",
                 connectionId, req.Direction);
-            return false;
+            return (false, null);
         }
 
         var x = Math.Clamp(req.X, 0f, CanvasW);
         var y = Math.Clamp(req.Y, 0f, CanvasH);
 
-        game.UpdatePosition(connectionId, x, y, req.State, req.Direction);
-        return true;
+        var tagLeaderboard = game.UpdatePosition(connectionId, x, y, req.State, req.Direction);
+        return (true, tagLeaderboard);
     }
 }

@@ -4,3 +4,57 @@
 
 /* Prevent default browser text-selection during gameplay */
 canvas { user-select: none; outline: none; }
+
+/* ── Animate-in keyframes ─────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(239,68,68,0.4); }
+  50%      { box-shadow: 0 0 20px rgba(239,68,68,0.8); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes slideInPlayer {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in     { animation: fadeIn 0.3s ease-out both; }
+.animate-fade-in-up  { animation: fadeInUp 0.4s ease-out both; }
+.animate-scale-in    { animation: scaleIn 0.3s ease-out both; }
+.animate-pulse-glow  { animation: pulseGlow 1.5s ease-in-out infinite; }
+.animate-shimmer     { animation: shimmer 2s linear infinite; }
+.animate-slide-in-player { animation: slideInPlayer 0.3s ease-out both; }
+
+/* Staggered delay helpers */
+.delay-75  { animation-delay: 75ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-225 { animation-delay: 225ms; }
+.delay-300 { animation-delay: 300ms; }
+
+/* Glass card utility */
+.glass-card {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Touch joystick area */
+.touch-control {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}

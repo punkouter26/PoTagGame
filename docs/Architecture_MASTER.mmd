@@ -1,0 +1,64 @@
+flowchart TB
+    %% ── C4 Level 1: Context ──
+    subgraph Context["System Context"]
+        User["Browser Client"]
+        SWA["Azure Static Web App"]
+    end
+
+    User -->|"HTTPS / WSS"| SWA
+
+    %% ── C4 Level 2: Containers ──
+    subgraph EdgeDelivery["Edge Delivery"]
+        CDN["SWA CDN"]
+        StaticAssets["Static Assets\nHTML · CSS · JS · Sprites"]
+    end
+
+    subgraph ComputeTier["Compute Tier"]
+        ViteSPA["React 18 SPA\nVite · TypeScript · Canvas 2D"]
+        SignalRHub["TagHub\nSignalR WebSocket"]
+        MinimalAPI["ASP.NET Core 10\nMinimal API · Scalar OpenAPI"]
+        BGService["GameBackgroundService\n1 Hz Timer Tick"]
+    end
+
+    subgraph DataPersistence["Data Persistence"]
+        GameService["GameService Singleton\nThread-safe In-Memory State"]
+        GameRoom["GameRoom Aggregate\nPlayers · Phase · Rounds"]
+        ReplayStore["ReplayRecorder\n~700 Frames Buffer"]
+        ArenaJSON["arenas.json\nShared Arena Definitions"]
+    end
+
+    %% ── Edge → Compute flows ──
+    CDN -->|"Serves"| StaticAssets
+    StaticAssets -->|"Loads into"| ViteSPA
+    ViteSPA -->|"SignalR WSS\nJoinLobby · UpdatePosition · StartGame"| SignalRHub
+    SignalRHub -->|"Delegates to"| MinimalAPI
+    MinimalAPI -->|"Calls"| GameService
+
+    %% ── Compute internal flows ──
+    BGService -->|"1 Hz TimeTick\nRound End · Auto-Restart"| SignalRHub
+    BGService -->|"Reads / Mutates"| GameService
+    GameService -->|"Manages"| GameRoom
+    GameService -->|"Records frames"| ReplayStore
+    GameService -->|"Loads walls"| ArenaJSON
+
+    %% ── Broadcast back to edge ──
+    SignalRHub -->|"Broadcasts\nStateUpdated · GameStarted\nRoundEnded · GameEnded"| ViteSPA
+
+    %% ── Styles ──
+    style Context fill:#1a1a2e,stroke:#e94560,color:#fff
+    style EdgeDelivery fill:#16213e,stroke:#0f3460,color:#fff
+    style ComputeTier fill:#0f3460,stroke:#533483,color:#fff
+    style DataPersistence fill:#533483,stroke:#e94560,color:#fff
+
+    style User fill:#e94560,stroke:#1a1a2e,color:#fff
+    style SWA fill:#0f3460,stroke:#e94560,color:#fff
+    style CDN fill:#16213e,stroke:#0f3460,color:#fff
+    style StaticAssets fill:#16213e,stroke:#0f3460,color:#fff
+    style ViteSPA fill:#0f3460,stroke:#533483,color:#fff
+    style SignalRHub fill:#0f3460,stroke:#533483,color:#fff
+    style MinimalAPI fill:#0f3460,stroke:#533483,color:#fff
+    style BGService fill:#0f3460,stroke:#533483,color:#fff
+    style GameService fill:#533483,stroke:#e94560,color:#fff
+    style GameRoom fill:#533483,stroke:#e94560,color:#fff
+    style ReplayStore fill:#533483,stroke:#e94560,color:#fff
+    style ArenaJSON fill:#533483,stroke:#e94560,color:#fff

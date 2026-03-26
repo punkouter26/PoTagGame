@@ -29,6 +29,8 @@ export interface GameStartedPayload {
   itId:             string;
   remainingSeconds: number;
   arenaId:          string;
+  currentRound:     number;
+  totalRounds:      number;
 }
 
 export interface StateUpdatedPayload {
@@ -46,6 +48,12 @@ export interface TimeTickPayload {
 
 export interface GameEndedPayload {
   leaderboard: PlayerSnapshot[];
+}
+
+export interface RoundEndedPayload {
+  leaderboard:  PlayerSnapshot[];
+  currentRound: number;
+  totalRounds:  number;
 }
 
 export interface ErrorPayload {
@@ -67,4 +75,6 @@ export interface GameState {
   leaderboard:      PlayerSnapshot[];
   errorMessage:     string | null;
   arenaId:          string;
+  currentRound:     number;
+  totalRounds:      number;
 }

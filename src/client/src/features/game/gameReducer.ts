@@ -7,6 +7,7 @@ import type {
   TaggedPayload,
   TimeTickPayload,
   GameEndedPayload,
+  RoundEndedPayload,
 } from '@/types/game';
 
 // ── Action types ──────────────────────────────────────────────────────────────
@@ -19,6 +20,7 @@ export type GameAction =
   | { type: 'TAGGED';         payload: TaggedPayload          }
   | { type: 'TIME_TICK';      payload: TimeTickPayload        }
   | { type: 'GAME_ENDED';     payload: GameEndedPayload      }
+  | { type: 'ROUND_ENDED';    payload: RoundEndedPayload     }
   | { type: 'ERROR';          payload: { message: string }   }
   | { type: 'CLEAR_ERROR'                                     }
   | { type: 'RESET_TO_LOBBY'                                  };
@@ -31,11 +33,13 @@ export const initialGameState: GameState = {
   myColorIdx:       0,
   players:          [],
   canStart:         false,
-  remainingSeconds: 120,
+  remainingSeconds: 40,
   itId:             null,
   leaderboard:      [],
   errorMessage:     null,
   arenaId:          'grassland',
+  currentRound:     0,
+  totalRounds:      3,
 };
 
 // ── Reducer ───────────────────────────────────────────────────────────────────
@@ -71,6 +75,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         itId:             action.payload.itId,
         remainingSeconds: action.payload.remainingSeconds,
         arenaId:          action.payload.arenaId ?? state.arenaId,
+        currentRound:     action.payload.currentRound ?? state.currentRound,
+        totalRounds:      action.payload.totalRounds ?? state.totalRounds,
         leaderboard:      [],
         errorMessage:     null,
       };
@@ -94,10 +100,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case 'GAME_ENDED':
+      if (state.phase === 'ENDED') return state;
       return {
         ...state,
         phase:       'ENDED',
         leaderboard: action.payload.leaderboard,
+      };
+
+    case 'ROUND_ENDED':
+      return {
+        ...state,
+        phase:        'ENDED',
+        leaderboard:  action.payload.leaderboard,
+        currentRound: action.payload.currentRound,
+        totalRounds:  action.payload.totalRounds,
       };
 
     case 'ERROR':

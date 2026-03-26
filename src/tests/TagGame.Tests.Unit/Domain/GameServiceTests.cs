@@ -228,10 +228,12 @@ public sealed class GameServiceTests
         var leaderboard = game.EndGame();
 
         game.GetPhase().Should().Be(GamePhase.Ended);
-        leaderboard.Should().NotBeEmpty();
+        leaderboard.Should().NotBeNull();
+        var board = leaderboard!;
+        board.Should().NotBeEmpty();
         // Leaderboard order: ascending IT time (lowest = best)
-        for (int i = 1; i < leaderboard.Count; i++)
-            leaderboard[i].ItDuration.Should().BeGreaterOrEqualTo(leaderboard[i - 1].ItDuration);
+        for (int i = 1; i < board.Count; i++)
+            board[i].ItDuration.Should().BeGreaterOrEqualTo(board[i - 1].ItDuration);
     }
 
     // ── UpdatePositionHandler input validation ────────────────────────────
@@ -252,7 +254,7 @@ public sealed class GameServiceTests
             NullLogger<UpdatePositionHandler>.Instance);
         var result = handler.Handle("conn1", new UpdatePositionRequest(x, y, state, dir));
 
-        result.Should().BeTrue();
+        result.Accepted.Should().BeTrue();
     }
 
     [Theory]
@@ -269,6 +271,6 @@ public sealed class GameServiceTests
             NullLogger<UpdatePositionHandler>.Instance);
         var result = handler.Handle("conn1", new UpdatePositionRequest(x, y, state, dir));
 
-        result.Should().BeFalse();
+        result.Accepted.Should().BeFalse();
     }
 }

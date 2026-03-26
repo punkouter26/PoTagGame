@@ -1,0 +1,23 @@
+erDiagram
+    GameRoom ||--o{ Player : "contains"
+    GameRoom ||--|| ArenaDefinition : "uses"
+    Player ||--|| PlayerSnapshot : "serialised as"
+
+    GameRoom {
+        GamePhase phase "Lobby | Playing | Ended"
+        string arenaId
+        int currentRound
+    }
+
+    Player {
+        string id
+        string name
+        float x
+        float y
+        boolean isIt
+    }
+
+    ArenaDefinition {
+        string id
+        string name
+    }

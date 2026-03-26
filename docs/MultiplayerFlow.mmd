@@ -1,0 +1,96 @@
+sequenceDiagram
+    participant P1 as Player 1 (Browser)
+    participant Hub as TagHub (SignalR)
+    participant GS as GameService (Lock)
+    participant TC as TagChecker
+    participant BG as BackgroundService (1 Hz)
+    participant P2 as Player 2 (Browser)
+
+    note over P1, P2: ── Lobby Join ──
+    P1->>Hub: JoinLobby("Alice")
+    Hub->>GS: AddPlayer("Alice", connId)
+    GS-->>Hub: Player { id, colorIdx }
+    Hub-->>P1: Joined { playerId, colorIdx }
+    Hub->>P1: LobbyUpdated { players, canStart }
+    Hub->>P2: LobbyUpdated { players, canStart }
+
+    P2->>Hub: JoinLobby("Bob")
+    Hub->>GS: AddPlayer("Bob", connId)
+    GS-->>Hub: Player { id, colorIdx }
+    Hub-->>P2: Joined { playerId, colorIdx }
+    Hub->>P1: LobbyUpdated { players, canStart=true }
+    Hub->>P2: LobbyUpdated { players, canStart=true }
+
+    note over P1, P2: ── Game Start ──
+    P1->>Hub: StartGame("dungeon")
+    Hub->>GS: StartGame("dungeon")
+    GS->>GS: Random IT = P1, spawn positions
+    GS-->>Hub: GameStarted payload
+    Hub->>P1: GameStarted { players, itId=P1, arena, timer=40 }
+    Hub->>P2: GameStarted { players, itId=P1, arena, timer=40 }
+
+    note over P1, P2: ── Real-Time Position Sync (20 fps) ──
+    loop Every 50ms
+        P1->>Hub: UpdatePosition(x, y, WALK, east)
+        Hub->>GS: UpdatePosition(connId, x, y, WALK, east)
+        GS->>GS: Validate + Clamp + Wall Collision
+        GS->>TC: FindTaggedPlayer(room)
+        TC-->>GS: null (no tag)
+        GS-->>Hub: PlayerSnapshot[]
+        Hub->>P1: StateUpdated { players[] }
+        Hub->>P2: StateUpdated { players[] }
+
+        P2->>Hub: UpdatePosition(x, y, WALK, west)
+        Hub->>GS: UpdatePosition(connId, x, y, WALK, west)
+        GS->>TC: FindTaggedPlayer(room)
+        TC-->>GS: null
+        GS-->>Hub: PlayerSnapshot[]
+        Hub->>P1: StateUpdated { players[] }
+        Hub->>P2: StateUpdated { players[] }
+    end
+
+    note over P1, P2: ── Timer Tick (1 Hz) ──
+    loop Every 1 second
+        BG->>GS: GetRemainingSeconds()
+        GS-->>BG: 35
+        BG->>Hub: TimeTick { remainingSeconds=35 }
+        Hub->>P1: TimeTick { 35 }
+        Hub->>P2: TimeTick { 35 }
+    end
+
+    note over P1, P2: ── Tag Event ──
+    P1->>Hub: UpdatePosition(x_near_P2, y_near_P2, PUNCH, east)
+    Hub->>GS: UpdatePosition(...)
+    GS->>TC: FindTaggedPlayer(room)
+    TC->>TC: Distance P1↔P2 < 40px AND P1.isIt AND !P2.immune
+    TC-->>GS: taggedId = P2
+    GS->>GS: P2.isIt=true, P1.immuneUntil=now+2s, P2.immuneUntil=now+2s
+    GS-->>Hub: PlayerSnapshot[] (P2 now IT)
+    Hub->>P1: StateUpdated { players[] }
+    Hub->>P2: StateUpdated { players[] }
+
+    note over P1, P2: ── Round End (Timer Expires) ──
+    BG->>GS: GetRemainingSeconds()
+    GS-->>BG: 0
+    BG->>GS: EndGame()
+    GS->>GS: Finalize IT durations, sort leaderboard
+    GS-->>BG: Leaderboard
+    BG->>Hub: RoundEnded { leaderboard, round=1, total=3 }
+    Hub->>P1: RoundEnded { leaderboard }
+    Hub->>P2: RoundEnded { leaderboard }
+
+    note over P1, P2: ── Auto-Restart (3s delay) ──
+    BG->>BG: Wait 3 seconds
+    BG->>GS: RestartRound()
+    GS->>GS: New random IT, reset immunity
+    GS-->>BG: GameStarted payload
+    BG->>Hub: GameStarted { round=2 }
+    Hub->>P1: GameStarted { round=2 }
+    Hub->>P2: GameStarted { round=2 }
+
+    note over P1, P2: ── Disconnect & Recovery ──
+    P2--xHub: Connection Lost
+    Hub->>GS: RemoveByConnectionId(P2.connId)
+    GS->>GS: If P2 was IT → assign IT to P1
+    GS-->>Hub: Updated snapshot
+    Hub->>P1: StateUpdated { players=[P1 only] }

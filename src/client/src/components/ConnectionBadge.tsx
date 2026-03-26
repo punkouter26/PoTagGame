@@ -1,4 +1,4 @@
-import type { ConnectionStatus } from '@/features/connection/useSignalR';
+import type { ConnectionStatus } from '@/features/connection';
 
 interface ConnectionBadgeProps {
   status: ConnectionStatus;
@@ -11,8 +11,9 @@ const STATUS_CONFIG: Record<ConnectionStatus, { label: string; colour: string }>
   disconnected: { label: 'Offline',     colour: 'bg-red-500    text-white'      },
 };
 
-/** Small status indicator shown in the UI header/overlay. */
+/** Small status indicator — hidden when connected (no noise for casual players). */
 export function ConnectionBadge({ status }: ConnectionBadgeProps) {
+  if (status === 'connected') return null;
   const cfg = STATUS_CONFIG[status];
   return (
     <span

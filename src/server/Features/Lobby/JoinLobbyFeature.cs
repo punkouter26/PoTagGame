@@ -19,7 +19,7 @@ public sealed record LobbyUpdatedResponse(List<PlayerSnapshot> Players, bool Can
 /// Encapsulates the JoinLobby use-case (VSA: one class per feature).
 /// The hub delegates to this handler to keep the hub thin.
 /// </summary>
-public sealed class JoinLobbyHandler(GameService game, ILogger<JoinLobbyHandler> logger)
+public sealed class JoinLobbyHandler(IGameService game, ILogger<JoinLobbyHandler> logger)
 {
     /// <summary>
     /// Processes a join request.

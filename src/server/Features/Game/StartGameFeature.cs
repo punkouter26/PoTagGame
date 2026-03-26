@@ -9,7 +9,9 @@ public sealed record GameStartedResponse(
     List<PlayerSnapshot> Players,
     string ItId,
     int RemainingSeconds,
-    string ArenaId);
+    string ArenaId,
+    int CurrentRound,
+    int TotalRounds);
 
 /// <summary>Server → All: full room snapshot sent each position-update cycle.</summary>
 public sealed record StateUpdatedResponse(List<PlayerSnapshot> Players);
@@ -20,10 +22,16 @@ public sealed record TimeTickResponse(int RemainingSeconds);
 /// <summary>Server → All: round has ended; leaderboard sorted ascending by IT time.</summary>
 public sealed record GameEndedResponse(List<PlayerSnapshot> Leaderboard);
 
+/// <summary>Server → All: a round ended mid-session; more rounds to play.</summary>
+public sealed record RoundEndedResponse(
+    List<PlayerSnapshot> Leaderboard,
+    int CurrentRound,
+    int TotalRounds);
+
 // ── Feature Handler ───────────────────────────────────────────────────────────
 
 /// <summary>Encapsulates the StartGame use-case.</summary>
-public sealed class StartGameHandler(GameService game, ILogger<StartGameHandler> logger)
+public sealed class StartGameHandler(IGameService game, ILogger<StartGameHandler> logger)
 {
     /// <summary>
     /// Starts the game if at least 1 player is in the lobby (solo mode allowed).
@@ -44,7 +52,9 @@ public sealed class StartGameHandler(GameService game, ILogger<StartGameHandler>
             game.GetSnapshot(),
             itId,
             game.GetRemainingSeconds(),
-            game.GetArenaId());
+            game.GetArenaId(),
+            game.GetRoundInfo().CurrentRound,
+            game.GetRoundInfo().TotalRounds);
 
         logger.LogInformation("StartGame succeeded; IT={ItId}; players={Count}",
             itId, response.Players.Count);

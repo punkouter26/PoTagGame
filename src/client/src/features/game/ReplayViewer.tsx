@@ -27,7 +27,7 @@ const CANVAS_W = 1280;
 const CANVAS_H = 720;
 
 /**
- * ReplayViewer — replays a round at 2× speed with a scrub bar.
+ * ReplayViewer — replays a round at 2× speed with Play/Pause control.
  * Renders the same sprites/arena as GameCanvas but from recorded frames.
  */
 export function ReplayViewer({ data, onClose }: ReplayViewerProps) {
@@ -52,7 +52,6 @@ export function ReplayViewer({ data, onClose }: ReplayViewerProps) {
 
     let rafId    = 0;
     let lastTime = performance.now();
-    // 2× speed: advance ~2 frame indices per real second (frames are at ~1 fps)
     let accumulator = 0;
     const PLAYBACK_SPEED = 2;
 
@@ -156,12 +155,6 @@ export function ReplayViewer({ data, onClose }: ReplayViewerProps) {
     return () => cancelAnimationFrame(rafId);
   }, [data, totalFrames, playing]);
 
-  const handleScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value);
-    frameIdxRef.current = Math.round(val * (totalFrames - 1));
-    setProgress(val);
-  };
-
   return (
     <div className="fixed inset-0 bg-black/80 flex flex-col items-center justify-center z-50">
       <div
@@ -176,7 +169,7 @@ export function ReplayViewer({ data, onClose }: ReplayViewerProps) {
         />
       </div>
 
-      {/* Scrub bar + controls */}
+      {/* Simple controls: Play/Pause + progress bar + Close */}
       <div className="flex items-center gap-3 mt-3 w-full px-8" style={{ maxWidth: CANVAS_W }}>
         <button
           onClick={() => setPlaying(!playing)}
@@ -185,15 +178,13 @@ export function ReplayViewer({ data, onClose }: ReplayViewerProps) {
           {playing ? '⏸ Pause' : '▶ Play'}
         </button>
 
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.001}
-          value={progress}
-          onChange={handleScrub}
-          className="flex-1 accent-blue-500"
-        />
+        {/* Progress indicator (read-only) */}
+        <div className="flex-1 bg-gray-700 rounded-full h-2 overflow-hidden">
+          <div
+            className="bg-blue-500 h-full transition-all duration-300"
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
 
         <button
           onClick={onClose}

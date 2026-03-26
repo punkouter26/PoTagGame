@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph Auth["Connect"]
+        Connect["Browser → SignalR"]
+    end
+
+    subgraph Lobby["Lobby"]
+        Join["Join + Pick Name"]
+    end
+
+    subgraph Play["Playing"]
+        Game["Move · Tag · Timer"]
+    end
+
+    subgraph End["End"]
+        Result["Leaderboard · Restart"]
+    end
+
+    Connect --> Join --> Game --> Result -->|"Play Again"| Join
+
+    style Auth fill:#1a1a2e,stroke:#e94560,color:#fff
+    style Lobby fill:#16213e,stroke:#0f3460,color:#fff
+    style Play fill:#0f3460,stroke:#533483,color:#fff
+    style End fill:#533483,stroke:#e94560,color:#fff
+    style Connect fill:#1a1a2e,stroke:#e94560,color:#fff
+    style Join fill:#16213e,stroke:#0f3460,color:#fff
+    style Game fill:#0f3460,stroke:#533483,color:#fff
+    style Result fill:#533483,stroke:#e94560,color:#fff
