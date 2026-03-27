@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { PlayerSnapshot, GameState } from '@/types/game';
 import { Button } from '@/components/Button';
 import { ConnectionBadge } from '@/components/ConnectionBadge';
@@ -37,35 +37,7 @@ export function LobbyScreen({
   );
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-start countdown when 2+ players are in the lobby
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    const enoughPlayers = gameState.players.length >= 2 && gameState.canStart && hasJoined;
-    if (enoughPlayers && countdown === null) {
-      setCountdown(5);
-      countdownRef.current = setInterval(() => {
-        setCountdown(prev => {
-          if (prev === null || prev <= 1) return 0;
-          return prev - 1;
-        });
-      }, 1000);
-    } else if (!enoughPlayers) {
-      setCountdown(null);
-      if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
-    }
-    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
-  }, [gameState.players.length, gameState.canStart, hasJoined]);
-
-  useEffect(() => {
-    if (countdown === 0) {
-      if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
-      onStart();
-    }
-  }, [countdown, onStart]);
-
-  // #6 — Auto-focus the name input on mount
+  // Auto-focus the name input on mount
   useEffect(() => {
     if (!hasJoined && nameInputRef.current) {
       nameInputRef.current.focus();
@@ -198,9 +170,7 @@ export function LobbyScreen({
             <InvitePanel />
           </div>
           <Button onClick={onStart} className="text-lg px-10 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-lg shadow-indigo-500/25 transition-all hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-[0.98] animate-fade-in-up delay-225">
-            {countdown !== null && countdown > 0
-              ? `Starting in ${countdown}s — Start Now`
-              : 'Start Game'}
+            Start Game
           </Button>
         </>
       )}

@@ -65,3 +65,4 @@ src/tests/TagGame.Tests.E2E/test-screenshots/
 
 # Windows
 Thumbs.db
+TESTRESULTS/

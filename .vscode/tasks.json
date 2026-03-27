@@ -64,7 +64,7 @@
         "background": {
           "activeOnStart": true,
           "beginsPattern": "VITE",
-          "endsPattern":   "➜\\s+Local:"
+          "endsPattern":   "(?i)Local:\\s+http"
         }
       },
       "presentation": { "reveal": "always", "panel": "new" }

@@ -1,4 +1,5 @@
 import type { GameState } from '@/types/game';
+import { PLAYER_COLORS } from '@/constants/sprites';
 
 interface GameHUDProps {
   gameState: GameState;
@@ -43,6 +44,20 @@ export function GameHUD({ gameState, onLeave }: GameHUDProps) {
             )}
           </span>
         )}
+      </div>
+
+      {/* Players Scores */}
+      <div className="absolute top-12 left-3 z-10 pointer-events-none flex flex-col gap-1">
+        {gameState.players.slice().sort((a, b) => a.itDuration - b.itDuration).map((p) => (
+          <div key={p.id} className="backdrop-blur-sm bg-black/40 px-3 py-1 rounded-full border border-white/10 shadow-lg flex items-center gap-2">
+             <span
+                className="w-2.5 h-2.5 rounded-full ring-1 ring-white/20"
+                style={{ backgroundColor: PLAYER_COLORS[p.colorIdx % PLAYER_COLORS.length] }}
+              />
+            <span className="text-white text-xs font-semibold">{p.name} {p.id === gameState.myId ? '(You)' : ''}</span>
+            <span className="text-gray-300 text-xs font-mono">{p.itDuration.toFixed(1)}s</span>
+          </div>
+        ))}
       </div>
 
       {/* Leave button */}
