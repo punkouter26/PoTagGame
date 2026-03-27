@@ -40,14 +40,6 @@ function isTouchDevice(): boolean {
 export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [showTouch] = useState(isTouchDevice);
-  const [showControlsOverlay, setShowControlsOverlay] = useState(true);
-
-  useEffect(() => {
-    if (!showControlsOverlay) return;
-    const dismiss = () => setShowControlsOverlay(false);
-    window.addEventListener('keydown', dismiss, { once: true });
-    return () => window.removeEventListener('keydown', dismiss);
-  }, [showControlsOverlay]);
 
   // Keep gameState in a ref so the RAF loop always reads the latest values
   const gameStateRef = useRef(gameState);
@@ -310,33 +302,6 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
           aria-label="Tag game canvas"
         />
       </div>
-
-      {/* Controls overlay — shown on first game start, dismissed by click or key */}
-      {showControlsOverlay && (
-        <div
-          role="button"
-          tabIndex={0}
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 cursor-pointer"
-          onClick={() => setShowControlsOverlay(false)}
-          onKeyDown={() => setShowControlsOverlay(false)}
-          aria-label="Dismiss controls overlay"
-        >
-          <div className="bg-gray-900/95 border border-gray-700 rounded-2xl px-10 py-8 text-white text-center shadow-2xl max-w-sm w-full">
-            <h2 className="text-2xl font-bold mb-5 text-indigo-400">Controls</h2>
-            <div className="space-y-3 mb-6 text-left">
-              <div className="flex justify-between gap-8">
-                <span className="font-mono font-bold text-yellow-300">WASD</span>
-                <span className="text-gray-300">Move</span>
-              </div>
-              <div className="flex justify-between gap-8">
-                <span className="font-mono font-bold text-yellow-300">Space</span>
-                <span className="text-gray-300">Punch</span>
-              </div>
-            </div>
-            <p className="text-gray-400 text-sm animate-pulse">Click or press any key to start</p>
-          </div>
-        </div>
-      )}
 
       {/* #10 — Mobile swipe controls: drag to move, tap to punch */}
       {showTouch && (

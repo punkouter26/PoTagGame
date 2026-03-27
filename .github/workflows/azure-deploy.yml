@@ -12,10 +12,9 @@ permissions:
   contents: read
 
 env:
-  DOTNET_VERSION:   '10.x'
-  NODE_VERSION:     '20'
-  AZURE_APP_NAME:   'PoTagGame-Server'
-  SWA_APP_LOCATION: 'src/server/wwwroot'
+  DOTNET_VERSION: '10.x'
+  NODE_VERSION:   '20'
+  AZURE_APP_NAME: 'PoTagGame-Server'
 
 jobs:
   # ── 1. Build React client ─────────────────────────────────────────────────
@@ -113,16 +112,6 @@ jobs:
           tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy Client to Azure Static Web Apps
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token:                      ${{ secrets.GITHUB_TOKEN }}
-          action:                          upload
-          app_location:                    ${{ env.SWA_APP_LOCATION }}
-          skip_app_build:                  true
-          output_location:                 ''
-
       - name: Deploy Server to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
@@ -162,7 +151,7 @@ jobs:
       - name: Run E2E tests
         working-directory: src/tests/TagGame.Tests.E2E
         env:
-          BASE_URL: 'https://victorious-island-089ca500f.4.azurestaticapps.net'
+          BASE_URL: 'https://potaggame-server.azurewebsites.net'
         run: npm test
 
       - name: Upload test report
