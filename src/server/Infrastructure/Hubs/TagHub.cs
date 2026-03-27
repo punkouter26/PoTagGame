@@ -92,12 +92,20 @@ public sealed class TagHub : Hub
         if (player is null)
         {
             var phase = _game.GetPhase();
-            var message = phase == GamePhase.Playing
-                ? "A game is in progress — you'll be able to join when it ends."
-                : phase == GamePhase.Ended
-                ? "The round just ended — the lobby will reopen momentarily."
-                : "Cannot join: the lobby is full (max 8 players).";
-            await Clients.Caller.SendAsync("Error", new { message });
+            var code = phase switch 
+            {
+                GamePhase.Playing => "GameInProgress",
+                GamePhase.Ended => "RoundEnded",
+                _ => "LobbyFull"
+            };
+            var message = code switch 
+            {
+                "GameInProgress" => "A game is in progress — you'll be able to join when it ends.",
+                "RoundEnded" => "The round just ended — the lobby will reopen momentarily.",
+                _ => "Cannot join: the lobby is full (max 8 players)."
+            };
+            // Send explicit structured reason codes for actionable client behavior
+            await Clients.Caller.SendAsync("JoinRejected", new { code, message });
             return;
         }
 

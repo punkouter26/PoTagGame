@@ -39,6 +39,14 @@ public sealed class GameBackgroundService : BackgroundService
             try
             {
                 var phase = _game.GetPhase();
+                var hasPlayers = _game.GetSnapshot().Count > 0;
+
+                if (!hasPlayers && phase != GamePhase.Lobby)
+                {
+                    _logger.LogWarning("No players remain but phase is {Phase} — recovering to Lobby", phase);
+                    _game.ResetToLobby();
+                    phase = GamePhase.Lobby;
+                }
 
                 if (phase == GamePhase.Playing)
                 {
