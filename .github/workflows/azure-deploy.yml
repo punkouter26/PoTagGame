@@ -11,109 +11,92 @@ permissions:
   id-token: write   # Required for OIDC Azure login
   contents: read
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   DOTNET_VERSION: '10.x'
   NODE_VERSION:   '22'
   AZURE_APP_NAME: 'PoTagGame-Server'
 
 jobs:
-  # ── 1. Build React client ─────────────────────────────────────────────────
-  build-client:
-    name: Build React Client
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: src/client
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: src/client/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Vite SPA
-        run: npm run build
-        env:
-          VITE_API_URL: 'https://potaggame-server.azurewebsites.net/tagHub'
-
-      - name: Upload wwwroot artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: wwwroot
-          path: src/server/wwwroot
-          retention-days: 1
-
-  # ── 2. C# unit tests ─────────────────────────────────────────────────────
+  # ── 1. C# unit tests ─────────────────────────────────────────────────────
   test-unit:
     name: C# Unit Tests
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Run unit tests
         run: dotnet test src/tests/TagGame.Tests.Unit/TagGame.Tests.Unit.csproj --logger "console;verbosity=normal" --configuration Release
 
-  # ── 3. C# integration tests ───────────────────────────────────────────────
+  # ── 2. C# integration tests ───────────────────────────────────────────────
   test-integration:
     name: C# Integration Tests
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Run integration tests
         run: dotnet test src/tests/TagGame.Tests.Integration/TagGame.Tests.Integration.csproj --logger "console;verbosity=normal" --configuration Release
 
-  # ── 4. Publish .NET + Deploy (push to main only) ─────────────────────────
+  # ── 3. Build client + Publish + Deploy (push to main only) ───────────────
+  #      Runs in a single job: no artifact upload/download round-trip needed.
   deploy:
-    name: Publish & Deploy
+    name: Build & Deploy
     runs-on: ubuntu-latest
-    needs: [build-client, test-unit, test-integration]
+    needs: [test-unit, test-integration]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: src/client/package-lock.json
+
+      - name: Install client dependencies
+        working-directory: src/client
+        run: npm ci
+
+      - name: Build Vite SPA into wwwroot
+        working-directory: src/client
+        run: npm run build
+        env:
+          VITE_API_URL: 'https://potaggame-server.azurewebsites.net/tagHub'
+
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Download wwwroot from client build
-        uses: actions/download-artifact@v4
-        with:
-          name: wwwroot
-          path: src/server/wwwroot
-
-      - name: Publish .NET server
+      - name: Publish .NET server (includes wwwroot)
         run: |
           dotnet publish src/server/PoTagGame.csproj \
             -c Release \
             -o publish
 
       - name: Azure login (OIDC — no secrets stored)
-        uses: azure/login@v2
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
         with:
           client-id:       ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy Server to Azure App Service
-        uses: azure/webapps-deploy@v3
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@84a80cfe7e9889f35148ed88c307e6e93bf02578 # v3
         with:
           app-name: ${{ env.AZURE_APP_NAME }}
           package:  publish
