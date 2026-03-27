@@ -34,14 +34,18 @@ test.describe('Lobby — Name Entry & Join', () => {
   });
 
   test('joining shows player in lobby list with (you) indicator', async ({ page }) => {
+    await test.step('Wait for SignalR connection', async () => {
+      await expect(page.locator('[data-testid="connection-badge"]')).toBeHidden({ timeout: 20_000 });
+    });
+
     await test.step('Enter name and join', async () => {
       await page.locator('input[placeholder*="name" i]').fill('ExplorePlayer');
       await page.getByRole('button', { name: /join/i }).click();
     });
 
     await test.step('Verify player appears in lobby', async () => {
-      await expect(page.getByText('ExplorePlayer')).toBeVisible();
-      await expect(page.getByText('(you)')).toBeVisible();
+      await expect(page.getByText('ExplorePlayer')).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText('(you)')).toBeVisible({ timeout: 10_000 });
     });
 
     await test.step('Verify lobby count badge', async () => {
@@ -152,7 +156,9 @@ test.describe('Lobby — Invite Panel', () => {
     const messengerLink = page.getByRole('link', { name: /messenger/i });
     const href = await messengerLink.getAttribute('href');
     expect(href).toContain('facebook.com/dialog/send');
-    expect(href).toContain(encodeURIComponent('localhost'));
+    // Link should encode the current page URL, not a hard-coded hostname
+    const pageHost = encodeURIComponent(new URL(page.url()).hostname);
+    expect(href).toContain(pageHost);
   });
 });
 
