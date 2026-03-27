@@ -2,14 +2,13 @@ flowchart TB
     %% ── C4 Level 1: Context ──
     subgraph Context["System Context"]
         User["Browser Client"]
-        SWA["Azure Static Web App"]
+        AppService["Azure App Service\nPoTagGame-Server"]
     end
 
-    User -->|"HTTPS / WSS"| SWA
+    User -->|"HTTPS / WSS"| AppService
 
     %% ── C4 Level 2: Containers ──
-    subgraph EdgeDelivery["Edge Delivery"]
-        CDN["SWA CDN"]
+    subgraph StaticServing["Static File Serving (wwwroot)"]
         StaticAssets["Static Assets\nHTML · CSS · JS · Sprites"]
     end
 
@@ -27,9 +26,8 @@ flowchart TB
         ArenaJSON["arenas.json\nShared Arena Definitions"]
     end
 
-    %% ── Edge → Compute flows ──
-    CDN -->|"Serves"| StaticAssets
-    StaticAssets -->|"Loads into"| ViteSPA
+    %% ── Static → Compute flows ──
+    StaticAssets -->|"Served by App Service"| ViteSPA
     ViteSPA -->|"SignalR WSS\nJoinLobby · UpdatePosition · StartGame"| SignalRHub
     SignalRHub -->|"Delegates to"| MinimalAPI
     MinimalAPI -->|"Calls"| GameService
@@ -46,13 +44,12 @@ flowchart TB
 
     %% ── Styles ──
     style Context fill:#1a1a2e,stroke:#e94560,color:#fff
-    style EdgeDelivery fill:#16213e,stroke:#0f3460,color:#fff
+    style StaticServing fill:#16213e,stroke:#0f3460,color:#fff
     style ComputeTier fill:#0f3460,stroke:#533483,color:#fff
     style DataPersistence fill:#533483,stroke:#e94560,color:#fff
 
     style User fill:#e94560,stroke:#1a1a2e,color:#fff
-    style SWA fill:#0f3460,stroke:#e94560,color:#fff
-    style CDN fill:#16213e,stroke:#0f3460,color:#fff
+    style AppService fill:#0f3460,stroke:#e94560,color:#fff
     style StaticAssets fill:#16213e,stroke:#0f3460,color:#fff
     style ViteSPA fill:#0f3460,stroke:#533483,color:#fff
     style SignalRHub fill:#0f3460,stroke:#533483,color:#fff

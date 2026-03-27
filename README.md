@@ -35,7 +35,7 @@ flowchart LR
 | **Client** | React 18 · TypeScript 5.4 · Vite 5 · Tailwind CSS 3.4 · Canvas 2D |
 | **Real-time** | SignalR 9 (WebSocket with auto-reconnect) |
 | **Server** | ASP.NET Core 10 · Minimal API · Serilog |
-| **Deploy** | Azure Static Web App |
+| **Deploy** | Azure App Service (serves client + API) |
 
 ## Game Flow
 

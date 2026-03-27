@@ -98,11 +98,11 @@ try
     // ── Background clock (1 Hz game timer) ────────────────────────────────────
     builder.Services.AddHostedService<GameBackgroundService>();
 
-    // ── CORS (allows Azure Static Web Apps to reach the SignalR hub) ──────────
+    // ── CORS (allowed origins configured per environment) ──────────────────────
     var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
     builder.Services.AddCors(options =>
     {
-        options.AddPolicy("SwaPolicy", policy =>
+        options.AddPolicy("CorsPolicy", policy =>
         {
             if (allowedOrigins.Length > 0)
                 policy.WithOrigins(allowedOrigins)
@@ -163,7 +163,7 @@ try
         };
     });
 
-    app.UseCors("SwaPolicy");
+    app.UseCors("CorsPolicy");
 
     // Serve CSS/JS/image assets from wwwroot
     app.UseDefaultFiles();   // → index.html

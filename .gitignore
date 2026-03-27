@@ -59,9 +59,6 @@ src/server/wwwroot/assets/
 src/server/wwwroot/sprites/
 src/server/wwwroot/index.html
 
-# staticwebapp.config.json is for SWA routing — kept as reference but SWA no longer deployed
-# staticwebapp.config.json
-
 # Dev tool state & caches
 .potune-state.json
 .vite/
