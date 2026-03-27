@@ -13,7 +13,7 @@ permissions:
 
 env:
   DOTNET_VERSION: '10.x'
-  NODE_VERSION:   '20'
+  NODE_VERSION:   '22'
   AZURE_APP_NAME: 'PoTagGame-Server'
 
 jobs:
