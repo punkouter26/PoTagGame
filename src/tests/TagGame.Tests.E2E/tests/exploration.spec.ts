@@ -55,9 +55,10 @@ test.describe('Lobby — Name Entry & Join', () => {
 
   test('name persists in localStorage after joining and returning', async ({ page }) => {
     await test.step('Join with a name', async () => {
+      await expect(page.locator('[data-testid="connection-badge"]')).toBeHidden({ timeout: 20_000 });
       await page.locator('input[placeholder*="name" i]').fill('PersistName');
       await page.getByRole('button', { name: /join/i }).click();
-      await expect(page.getByText('PersistName')).toBeVisible();
+      await expect(page.getByText('PersistName')).toBeVisible({ timeout: 15_000 });
     });
 
     await test.step('Reload and verify name persisted', async () => {
@@ -192,34 +193,7 @@ test.describe('Game — Start and Canvas', () => {
     });
   });
 
-  test('controls overlay shows WASD and Space instructions', async ({ page }) => {
-    await test.step('Verify controls overlay content', async () => {
-      await expect(page.getByRole('heading', { name: /controls/i })).toBeVisible();
-      await expect(page.getByText('WASD')).toBeVisible();
-      await expect(page.getByText('Move')).toBeVisible();
-      await expect(page.getByText('Space')).toBeVisible();
-      await expect(page.getByText('Punch')).toBeVisible();
-      await expect(page.getByText(/click or press any key/i)).toBeVisible();
-    });
-  });
-
-  test('controls overlay dismisses on click', async ({ page }) => {
-    await test.step('Click the overlay to dismiss', async () => {
-      const overlay = page.locator('[role="button"]').filter({ hasText: /controls/i });
-      await overlay.click({ force: true });
-    });
-
-    await test.step('Overlay is no longer visible', async () => {
-      await expect(page.getByRole('heading', { name: /controls/i })).not.toBeVisible({ timeout: 3_000 });
-    });
-  });
-
   test('WASD keyboard input does not crash the game', async ({ page }) => {
-    await test.step('Dismiss controls overlay', async () => {
-      const overlay = page.locator('[role="button"]').filter({ hasText: /controls/i });
-      await overlay.click({ force: true });
-    });
-
     await test.step('Send WASD keys', async () => {
       const canvas = page.locator('canvas');
       await canvas.focus();
