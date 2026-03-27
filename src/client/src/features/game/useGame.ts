@@ -81,7 +81,7 @@ export function useGame(
       );
     } else {
       // Offline fallback: start a local solo session without a server
-      const playerName = localStorage.getItem('potaggame_name') || 'Player';
+      const playerName = sessionStorage.getItem('potaggame_name') || 'Player';
       const localPlayer: PlayerSnapshot = {
         id: 'local', name: playerName, colorIdx: 0,
         x: 640, y: 360, state: 'IDLE', direction: 'south',

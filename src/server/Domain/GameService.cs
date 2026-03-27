@@ -107,12 +107,15 @@ public sealed class GameService : IGameService
             int colorIdx   = Enumerable.Range(0, GameRoom.MaxPlayers)
                                        .First(i => !usedColors.Contains(i));
 
+            var baseName = SanitiseName(name);
+            var uniqueName = EnsureUniqueName(baseName, _room.Players.Values.Select(p => p.Name));
+
             var spawn  = Spawns[_room.Players.Count % Spawns.Length];
             var player = new Player
             {
                 Id           = Guid.NewGuid().ToString("N")[..8],
                 ConnectionId = connectionId,
-                Name         = SanitiseName(name),
+                Name         = uniqueName,
                 ColorIdx     = colorIdx,
                 X            = spawn.X,
                 Y            = spawn.Y,
@@ -388,6 +391,29 @@ public sealed class GameService : IGameService
         // Strip < and > to prevent any downstream XSS if names are rendered in raw HTML.
         var cleaned = raw.Replace("<", "").Replace(">", "").Trim();
         return cleaned.Length > 20 ? cleaned[..20] : cleaned.Length == 0 ? "Player" : cleaned;
+    }
+
+    /// <summary>
+    /// Ensures each lobby display name is unique (case-insensitive) by appending
+    /// a numeric suffix such as " (2)" when needed.
+    /// </summary>
+    private static string EnsureUniqueName(string baseName, IEnumerable<string> existingNames)
+    {
+        var existing = existingNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (!existing.Contains(baseName)) return baseName;
+
+        for (var i = 2; i <= 99; i++)
+        {
+            var suffix = $" ({i})";
+            var maxBaseLength = Math.Max(1, 20 - suffix.Length);
+            var trimmedBase = baseName.Length > maxBaseLength
+                ? baseName[..maxBaseLength]
+                : baseName;
+            var candidate = trimmedBase + suffix;
+            if (!existing.Contains(candidate)) return candidate;
+        }
+
+        return baseName[..Math.Min(baseName.Length, 15)] + "-" + Guid.NewGuid().ToString("N")[..4];
     }
 
     /// <summary>Returns the requested position if it doesn't collide with walls, or a nearby safe position.</summary>

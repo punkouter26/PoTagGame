@@ -40,7 +40,6 @@ function isTouchDevice(): boolean {
 export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [showTouch] = useState(isTouchDevice);
-  const [showHint, setShowHint] = useState(() => !localStorage.getItem('potaggame_controls_seen'));
 
   // Keep gameState in a ref so the RAF loop always reads the latest values
   const gameStateRef = useRef(gameState);
@@ -293,32 +292,6 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
         style={{ maxWidth: wrapperMaxWidth, aspectRatio: `${CANVAS_W} / ${CANVAS_H}`, margin: '0 auto' }}
       >
         <GameHUD gameState={gameState} onLeave={onLeave} />
-
-        {/* One-time controls hint overlay */}
-        {showHint && (
-          <div
-            className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-sm cursor-pointer"
-            onClick={() => { localStorage.setItem('potaggame_controls_seen', '1'); setShowHint(false); }}
-            onKeyDown={(e) => { if (e.key) { localStorage.setItem('potaggame_controls_seen', '1'); setShowHint(false); } }}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="glass-card rounded-2xl px-8 py-6 text-center space-y-3 animate-scale-in pointer-events-none">
-              <h3 className="text-white font-bold text-lg">Controls</h3>
-              <div className="flex gap-6 justify-center text-gray-300 text-sm">
-                <span className="flex items-center gap-2">
-                  <kbd className="px-2 py-1 rounded bg-white/10 text-white font-mono text-xs">WASD</kbd>
-                  Move
-                </span>
-                <span className="flex items-center gap-2">
-                  <kbd className="px-2 py-1 rounded bg-white/10 text-white font-mono text-xs">Space</kbd>
-                  Punch
-                </span>
-              </div>
-              <p className="text-gray-500 text-xs">Click or press any key to start</p>
-            </div>
-          </div>
-        )}
 
         <canvas
           ref={canvasRef}

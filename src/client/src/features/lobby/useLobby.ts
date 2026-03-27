@@ -24,7 +24,7 @@ export function useLobby(
   isOnline:   boolean,
   myId:       string | null,
 ): UseLobbyResult {
-  const savedName = localStorage.getItem(STORAGE_KEY_NAME) ?? '';
+  const savedName = sessionStorage.getItem(STORAGE_KEY_NAME) ?? '';
   const [name,      setName]      = useState(savedName);
   const [hasJoined, setHasJoined] = useState(false);
   const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
@@ -51,8 +51,8 @@ export function useLobby(
     const trimmed = name.trim();
     if (!trimmed) return;
 
-    // Persist name to localStorage for next visit
-    localStorage.setItem(STORAGE_KEY_NAME, trimmed);
+    // Persist name per-tab so multiple local players can use different names.
+    sessionStorage.setItem(STORAGE_KEY_NAME, trimmed);
 
     if (isOnline && connection) {
       connection
@@ -100,7 +100,7 @@ export function useLobby(
   }, [hasJoined, isOnline, connection, myId, name]);
 
   const clearSaved = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY_NAME);
+    sessionStorage.removeItem(STORAGE_KEY_NAME);
     setName('');
     setHasJoined(false);
     if (retryRef.current) { clearInterval(retryRef.current); retryRef.current = null; }
