@@ -1,19 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <!--
     TargetFramework, Nullable, ImplicitUsings, TreatWarningsAsErrors, and NoWarn
-    are inherited from src/Directory.Build.props.
+    are inherited from Directory.Build.props.
   -->
   <PropertyGroup>
-    <RootNamespace>TagGame</RootNamespace>
-    <AssemblyName>TagGame</AssemblyName>
+    <RootNamespace>PoTagGame</RootNamespace>
+    <AssemblyName>PoTagGame</AssemblyName>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- SignalR is included in the Web SDK; no extra package needed for net10 -->
-    <!-- Versions are managed centrally in src/Directory.Packages.props (CPM)  -->
+    <!-- Versions are managed centrally in Directory.Packages.props (CPM)  -->
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Serilog.Sinks.ApplicationInsights" />
+    <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Scalar.AspNetCore" />
   </ItemGroup>

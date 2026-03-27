@@ -1,4 +1,4 @@
-namespace TagGame.Domain;
+namespace PoTagGame.Domain;
 
 /// <summary>
 /// Represents the phase of a single game room.

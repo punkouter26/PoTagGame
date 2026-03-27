@@ -6,7 +6,6 @@ import { InputHandler } from '@/engine/InputHandler';
 import { SpriteLoader } from '@/engine/SpriteLoader';
 import { SPRITE_SIZE, PLAYER_COLORS } from '@/constants/sprites';
 import { getArenaById } from '@/constants/arenas';
-import { drawMiniMap } from './drawMiniMap';
 import { useTouchControls } from './useTouchControls';
 import { GameHUD } from './GameHUD';
 
@@ -41,7 +40,21 @@ function isTouchDevice(): boolean {
 export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [showTouch] = useState(isTouchDevice);
-  const [showHint, setShowHint] = useState(() => !localStorage.getItem('controls-seen'));
+  const [showHint, setShowHint] = useState(() => !localStorage.getItem('potaggame_controls_seen'));
+
+  // Keep gameState in a ref so the RAF loop always reads the latest values
+  const gameStateRef = useRef(gameState);
+  gameStateRef.current = gameState;
+
+  // Responsive maxWidth — recalculated on window resize
+  const [wrapperMaxWidth, setWrapperMaxWidth] = useState(
+    () => `${(window.innerHeight / CANVAS_H) * CANVAS_W}px`,
+  );
+  useEffect(() => {
+    const recalc = () => setWrapperMaxWidth(`${(window.innerHeight / CANVAS_H) * CANVAS_W}px`);
+    window.addEventListener('resize', recalc);
+    return () => window.removeEventListener('resize', recalc);
+  }, []);
 
   // Touch controls extracted to useTouchControls hook
   const { dirRef: touchDirRef, punchRef: touchPunchRef, handleTouchStart, handleTouchMove, handleTouchEnd } = useTouchControls();
@@ -63,7 +76,7 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
     let localY = CANVAS_H / 2;
 
     // Initialise from server snapshot if we already have a position
-    const me = gameState.players.find((p) => p.id === gameState.myId);
+    const me = gameStateRef.current.players.find((p) => p.id === gameStateRef.current.myId);
     if (me) { localX = me.x; localY = me.y; }
 
     let lastTime  = performance.now();
@@ -71,7 +84,7 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
     let rafId     = 0;
 
     // ── Arena ────────────────────────────────────────────────────────────
-    const arena = getArenaById(gameState.arenaId);
+    const arena = getArenaById(gameStateRef.current.arenaId);
 
     /** Check circle vs arena walls collision */
     function collidesWithWalls(cx: number, cy: number, radius: number): boolean {
@@ -138,7 +151,7 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
       }
 
       // ── Send position to server ─────────────────────────────────────
-      if (isOnline && connection && sendTimer >= 1 / SEND_HZ && gameState.myId) {
+      if (isOnline && connection && sendTimer >= 1 / SEND_HZ && gameStateRef.current.myId) {
         sendTimer = 0;
         void connection
           .invoke('UpdatePosition', localX, localY, aggregatedState, aggregatedDir)
@@ -164,13 +177,16 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
         }
       }
 
+      // Read latest state from ref (avoids stale closure for multiplayer updates)
+      const gs = gameStateRef.current;
+
       // Merge server players with local override for self
-      const renderPlayers = gameState.players.map((p) =>
-        p.id === gameState.myId ? { ...p, x: localX, y: localY } : p,
+      const renderPlayers = gs.players.map((p) =>
+        p.id === gs.myId ? { ...p, x: localX, y: localY } : p,
       );
 
       // Add self if offline (not in player list)
-      if (!gameState.players.some((p) => p.id === gameState.myId)) {
+      if (!gs.players.some((p) => p.id === gs.myId)) {
         renderPlayers.push({
           id:          'local',
           name:        'Player',
@@ -187,8 +203,8 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
 
       for (const p of renderPlayers) {
         const anim  = getAnim(p.id);
-        const state = p.id === gameState.myId ? aggregatedState : p.state;
-        const dir   = p.id === gameState.myId ? aggregatedDir   : p.direction;
+        const state = p.id === gs.myId ? aggregatedState : p.state;
+        const dir   = p.id === gs.myId ? aggregatedDir   : p.direction;
         anim.update(state, delta);
 
         const img = SpriteLoader.get({
@@ -197,7 +213,7 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
           frame:     anim.frameIndex,
         });
 
-        const isIt    = p.id === gameState.itId;
+        const isIt    = p.id === gs.itId;
         const color   = PLAYER_COLORS[p.colorIdx] ?? '#ffffff';
         const drawX   = p.x - SPRITE_SIZE / 2;
         const drawY   = p.y - SPRITE_SIZE / 2;
@@ -242,7 +258,7 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
         }
 
         // Punch flash effect
-        if (p.id === gameState.myId && isPunch) {
+        if (p.id === gs.myId && isPunch) {
           ctx.save();
           const flashGrad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, SPRITE_SIZE * 1.2);
           flashGrad.addColorStop(0, 'rgba(255, 255, 200, 0.35)');
@@ -255,12 +271,6 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
         }
       }
 
-      // ── Mini-map ──────────────────────────────────────────────────
-      drawMiniMap({
-        ctx, arena, players: renderPlayers,
-        myId: gameState.myId, itId: gameState.itId,
-        canvasW: CANVAS_W, canvasH: CANVAS_H, now,
-      });
     }
 
     rafId = requestAnimationFrame(render);
@@ -270,7 +280,7 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
       cancelAnimationFrame(rafId);
       input.destroy();
     };
-    // Intentionally narrow deps — gameState changes are read inside render via closure
+    // Deps: connection/isOnline only — gameState reads go through gameStateRef
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connection, isOnline]);
 
@@ -280,7 +290,7 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
       {/* #7 — Canvas + HUD wrapper — fills viewport width, maintains 16:9 */}
       <div
         className="relative w-full h-full max-h-screen"
-        style={{ maxWidth: `${(window.innerHeight / CANVAS_H) * CANVAS_W}px`, aspectRatio: `${CANVAS_W} / ${CANVAS_H}`, margin: '0 auto' }}
+        style={{ maxWidth: wrapperMaxWidth, aspectRatio: `${CANVAS_W} / ${CANVAS_H}`, margin: '0 auto' }}
       >
         <GameHUD gameState={gameState} onLeave={onLeave} />
 
@@ -288,8 +298,8 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
         {showHint && (
           <div
             className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-sm cursor-pointer"
-            onClick={() => { localStorage.setItem('controls-seen', '1'); setShowHint(false); }}
-            onKeyDown={(e) => { if (e.key) { localStorage.setItem('controls-seen', '1'); setShowHint(false); } }}
+            onClick={() => { localStorage.setItem('potaggame_controls_seen', '1'); setShowHint(false); }}
+            onKeyDown={(e) => { if (e.key) { localStorage.setItem('potaggame_controls_seen', '1'); setShowHint(false); } }}
             role="button"
             tabIndex={0}
           >
@@ -323,7 +333,7 @@ export function GameCanvas({ gameState, connection, isOnline, onLeave }: GameCan
       {/* #10 — Mobile swipe controls: drag to move, tap to punch */}
       {showTouch && (
         <div
-          className="touch-control fixed inset-0 z-20"
+          className="touch-control fixed inset-0 z-0"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}

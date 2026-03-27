@@ -1,11 +1,11 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using TagGame.Domain;
-using TagGame.Features.Lobby;
-using TagGame.Features.Position;
+using PoTagGame.Domain;
+using PoTagGame.Features.Lobby;
+using PoTagGame.Features.Position;
 using Xunit;
 
-namespace TagGame.Tests.Unit.Domain;
+namespace PoTagGame.Tests.Unit.Domain;
 
 /// <summary>
 /// Unit tests for <see cref="GameService"/>.

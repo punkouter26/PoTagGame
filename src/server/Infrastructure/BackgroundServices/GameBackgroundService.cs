@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.SignalR;
-using TagGame.Domain;
-using TagGame.Features.Game;
-using TagGame.Features.Lobby;
-using TagGame.Infrastructure.Hubs;
+using PoTagGame.Domain;
+using PoTagGame.Features.Game;
+using PoTagGame.Features.Lobby;
+using PoTagGame.Infrastructure.Hubs;
 
-namespace TagGame.Infrastructure.BackgroundServices;
+namespace PoTagGame.Infrastructure.BackgroundServices;
 
 /// <summary>
 /// Hosted background service that drives the game clock at ~1 Hz.

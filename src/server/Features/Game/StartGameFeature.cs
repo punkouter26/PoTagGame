@@ -1,6 +1,6 @@
-using TagGame.Domain;
+using PoTagGame.Domain;
 
-namespace TagGame.Features.Game;
+namespace PoTagGame.Features.Game;
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
 

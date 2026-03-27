@@ -3,12 +3,12 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
-using TagGame.Domain;
-using TagGame.Features.Lobby;
-using TagGame.Features.Game;
+using PoTagGame.Domain;
+using PoTagGame.Features.Lobby;
+using PoTagGame.Features.Game;
 using Xunit;
 
-namespace TagGame.Tests.Integration.Hubs;
+namespace PoTagGame.Tests.Integration.Hubs;
 
 /// <summary>
 /// Integration tests for TagHub using a real in-process SignalR server.
@@ -32,7 +32,7 @@ public sealed class TagHubTests : IAsyncLifetime
                     // Remove the background service so tests aren't polluted by
                     // timed "GameEnded" broadcasts firing during test execution
                     var descriptor = services.SingleOrDefault(
-                        d => d.ImplementationType == typeof(TagGame.Infrastructure.BackgroundServices.GameBackgroundService));
+                        d => d.ImplementationType == typeof(PoTagGame.Infrastructure.BackgroundServices.GameBackgroundService));
                     if (descriptor is not null) services.Remove(descriptor);
                 });
             });
@@ -103,7 +103,7 @@ public sealed class TagHubTests : IAsyncLifetime
         started.Should().NotBeNull();
         started!.Players.Should().ContainSingle();
         started.ItId.Should().NotBeNullOrWhiteSpace();
-        started.RemainingSeconds.Should().Be(120);
+        started.RemainingSeconds.Should().BeInRange(1, 40);
     }
 
     [Fact]

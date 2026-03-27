@@ -26,9 +26,13 @@
     <!-- ── Logging ── -->
     <PackageVersion Include="Serilog.AspNetCore"                        Version="8.0.3"   />
     <PackageVersion Include="Serilog.Sinks.ApplicationInsights"         Version="4.0.0"   />
+    <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore"    Version="1.2.0"   />
 
     <!-- ── OpenAPI ── -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi"              Version="10.0.4"  />
     <PackageVersion Include="Scalar.AspNetCore"                         Version="2.0.21"  />
+
+    <!-- ── Integration containers ── -->
+    <PackageVersion Include="DotNet.Testcontainers"                     Version="1.6.0"   />
   </ItemGroup>
 </Project>

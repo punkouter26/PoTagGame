@@ -9,8 +9,8 @@ obj/
 .idea/
 *.sln.iml
 
-# VS Code (keep .vscode tracked if desired; comment out if not)
-# .vscode/
+# VS Code
+.vscode/
 
 # Logs
 logs/

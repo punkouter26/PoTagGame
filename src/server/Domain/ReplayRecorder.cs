@@ -1,4 +1,4 @@
-namespace TagGame.Domain;
+namespace PoTagGame.Domain;
 
 /// <summary>A single frame in the replay buffer — timestamped snapshot of all players.</summary>
 public sealed record ReplayFrame(double TimestampMs, List<PlayerSnapshot> Players);

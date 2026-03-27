@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 /**
  * In-game smoke-tests.
@@ -7,8 +7,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Game', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    // Wait for SignalR connection before interacting
-    await expect(page.locator('[data-testid="connection-badge"]')).toContainText(/connected/i, { timeout: 15_000 });
+    // ConnectionBadge hides when connected — wait for it to disappear
+    await expect(page.locator('[data-testid="connection-badge"]')).toBeHidden({ timeout: 15_000 });
     await page.locator('input[placeholder*="name" i]').fill('SoloPlayer');
     await page.getByRole('button', { name: /join/i }).click();
     // Wait for lobby to update and Start Game button to appear
@@ -38,6 +38,10 @@ test.describe('Game', () => {
   test('keyboard arrow keys move the player (canvas receives input)', async ({ page }) => {
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
+
+    // Dismiss the controls overlay that intercepts pointer events
+    const overlay = page.locator('[role="button"]').filter({ hasText: /click or press/i });
+    if (await overlay.isVisible()) await overlay.click();
 
     // Focus canvas so it receives keyboard events
     await canvas.click();

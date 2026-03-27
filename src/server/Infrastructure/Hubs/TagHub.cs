@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.SignalR;
-using TagGame.Domain;
-using TagGame.Features.Game;
-using TagGame.Features.Lobby;
-using TagGame.Features.Position;
+using PoTagGame.Domain;
+using PoTagGame.Features.Game;
+using PoTagGame.Features.Lobby;
+using PoTagGame.Features.Position;
 
-namespace TagGame.Infrastructure.Hubs;
+namespace PoTagGame.Infrastructure.Hubs;
 
 /// <summary>
 /// SignalR hub — the real-time WebSocket bridge between clients and the server.

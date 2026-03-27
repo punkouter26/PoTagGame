@@ -78,14 +78,22 @@ docs/                              Architecture diagrams (Mermaid)
 ## Quick Start
 
 ```bash
+# Optional: local Azurite container (required for storage integration tests)
+docker compose -f docker-compose.azurite.yml up -d
+
 # Server (terminal 1)
-dotnet watch run --project src/server/TagGame.csproj --launch-profile http
+dotnet watch run --project src/server/PoTagGame.csproj --launch-profile http
 
 # Client (terminal 2)
 cd src/client && npm install && npm run dev
 ```
 
 Open `http://localhost:5173` — the Vite dev server proxies SignalR to the .NET backend.
+
+Health and diagnostics endpoints:
+
+- `http://localhost:5000/health` returns structured JSON health for configured dependencies.
+- `http://localhost:5000/diag` returns masked connection info plus dependency status.
 
 ## Documentation
 

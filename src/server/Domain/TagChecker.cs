@@ -1,4 +1,4 @@
-namespace TagGame.Domain;
+namespace PoTagGame.Domain;
 
 /// <summary>
 /// Pure domain helper: proximity-based tag detection and IT assignment.

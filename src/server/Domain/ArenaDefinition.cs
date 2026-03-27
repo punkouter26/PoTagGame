@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace TagGame.Domain;
+namespace PoTagGame.Domain;
 
 /// <summary>Rectangular wall obstacle in an arena.</summary>
 public sealed record ArenaWall(

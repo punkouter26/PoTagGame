@@ -1,4 +1,4 @@
-namespace TagGame.Domain;
+namespace PoTagGame.Domain;
 
 /// <summary>
 /// Thread-safe singleton that owns the single game room.
@@ -264,14 +264,8 @@ public sealed class GameService : IGameService
             _room.RoundStartMs = 0;
             _room.CurrentRound = 0;
             _room.TotalRounds  = 3;
-            foreach (var p in _room.Players.Values)
-            {
-                p.IsIt        = false;
-                p.ItDuration  = 0;
-                p.ImmuneUntil = 0;
-                p.ItSince     = 0;
-            }
-            _logger.LogInformation("Room reset to Lobby");
+            _room.Players.Clear();
+            _logger.LogInformation("Room reset to Lobby (all players cleared)");
         }
     }
 

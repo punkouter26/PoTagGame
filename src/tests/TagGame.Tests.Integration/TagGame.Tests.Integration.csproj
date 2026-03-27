@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
     TargetFramework, Nullable, ImplicitUsings, TreatWarningsAsErrors, and NoWarn
-    are inherited from src/Directory.Build.props.
-    Package versions are managed centrally in src/Directory.Packages.props (CPM).
+    are inherited from Directory.Build.props.
+    Package versions are managed centrally in Directory.Packages.props (CPM).
   -->
   <PropertyGroup>
-    <RootNamespace>TagGame.Tests.Integration</RootNamespace>
+    <RootNamespace>PoTagGame.Tests.Integration</RootNamespace>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
@@ -16,9 +16,10 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="DotNet.Testcontainers" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\server\TagGame.csproj" />
+    <ProjectReference Include="..\..\server\PoTagGame.csproj" />
   </ItemGroup>
 </Project>

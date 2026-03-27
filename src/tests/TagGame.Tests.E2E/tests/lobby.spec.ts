@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 /**
  * Lobby smoke-tests.
@@ -27,11 +27,11 @@ test.describe('Lobby', () => {
     await expect(page.getByRole('button', { name: /start game/i })).toBeVisible();
   });
 
-  test('connection badge shows connected state', async ({ page }) => {
+  test('connection badge hides when connected (component returns null on success)', async ({ page }) => {
     await page.goto('/');
-    // Badge should eventually show "Connected" (or a green indicator)
+    // ConnectionBadge renders null when status === 'connected',
+    // so a hidden badge proves the WebSocket connection succeeded.
     const badge = page.locator('[data-testid="connection-badge"]');
-    await expect(badge).toBeVisible({ timeout: 10_000 });
-    await expect(badge).toContainText(/connected/i);
+    await expect(badge).toBeHidden({ timeout: 15_000 });
   });
 });

@@ -92,7 +92,7 @@ jobs:
 
       - name: Publish .NET server
         run: |
-          dotnet publish src/server/TagGame.csproj \
+          dotnet publish src/server/PoTagGame.csproj \
             -c Release \
             -o publish
 

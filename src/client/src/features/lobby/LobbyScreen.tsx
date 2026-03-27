@@ -102,7 +102,9 @@ export function LobbyScreen({
           onSubmit={(e) => { e.preventDefault(); handleJoin(); }}
         >
           <div className="flex gap-2">
+            <label htmlFor="player-name" className="sr-only">Player name</label>
             <input
+              id="player-name"
               ref={nameInputRef}
               type="text"
               placeholder="Enter your name"
@@ -164,8 +166,9 @@ export function LobbyScreen({
       {hasJoined && gameState.canStart && (
         <>
           <div className="flex items-center gap-3 animate-fade-in-up delay-75">
-            <label className="text-sm text-gray-400 font-medium">Arena</label>
+            <label htmlFor="arena-select" className="text-sm text-gray-400 font-medium">Arena</label>
             <select
+              id="arena-select"
               value={selectedArenaId}
               onChange={(e) => onArenaChange(e.target.value)}
               className="px-3 py-2 rounded-xl bg-white/5 text-white border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 backdrop-blur-sm text-sm appearance-none cursor-pointer"

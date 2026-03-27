@@ -27,6 +27,12 @@ export default defineConfig({
       name:   'firefox',
       use:    { ...devices['Desktop Firefox'] },
     },
+    {
+      // Portrait mode — matches common Android (Pixel 5: 393 × 851)
+      name: 'mobile-portrait',
+      use:  { ...devices['Pixel 5'] },
+      testMatch: '**/mobile.spec.ts',
+    },
   ],
 
   /* Uncomment to start the server automatically during `npm test` */

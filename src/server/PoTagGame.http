@@ -33,3 +33,27 @@ POST {{baseUrl}}/tagHub/negotiate?negotiateVersion=1
 Content-Type: application/json
 
 ###
+
+### ── Dev debug: reset room state ───────────────────
+POST {{baseUrl}}/test/reset
+Accept: application/json
+
+###
+
+### ── Dev debug: join lobby ─────────────────────────
+POST {{baseUrl}}/test/join?name=HttpDebugPlayer
+Accept: application/json
+
+###
+
+### ── Dev debug: start game ─────────────────────────
+POST {{baseUrl}}/test/start?arenaId=grassland
+Accept: application/json
+
+###
+
+### ── Dev debug: position update ────────────────────
+POST {{baseUrl}}/test/position?x=300&y=240&state=WALK&direction=east
+Accept: application/json
+
+###

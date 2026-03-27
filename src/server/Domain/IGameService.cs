@@ -1,4 +1,4 @@
-namespace TagGame.Domain;
+namespace PoTagGame.Domain;
 
 /// <summary>
 /// Abstraction over the game service — enables testability and future multi-room support.

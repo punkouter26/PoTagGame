@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 /**
  * JavaScript error detection test.
@@ -20,7 +20,7 @@ test.describe('JavaScript Error Detection', () => {
 
     // Navigate to app
     await page.goto('/');
-    await expect(page.locator('[data-testid="connection-badge"]')).toContainText(/connected/i, { timeout: 15_000 });
+    await expect(page.locator('[data-testid="connection-badge"]')).toBeHidden({ timeout: 15_000 });
 
     // Join lobby
     await page.locator('input[placeholder*="name" i]').fill('JSCheckPlayer');
@@ -35,7 +35,10 @@ test.describe('JavaScript Error Detection', () => {
     // Wait for canvas
     await expect(page.locator('canvas')).toBeVisible({ timeout: 10_000 });
 
-    // Move around
+    // Dismiss controls overlay then interact with canvas
+    const overlay = page.locator('[role="button"]').filter({ hasText: /click or press/i });
+    if (await overlay.isVisible()) await overlay.click();
+
     const canvas = page.locator('canvas');
     await canvas.click();
     await page.keyboard.press('ArrowRight');

@@ -49,6 +49,7 @@ export function GameHUD({ gameState, onLeave }: GameHUDProps) {
       <div className="absolute bottom-3 right-3 z-10">
         <button
           onClick={onLeave}
+          aria-label="Leave Game"
           className="backdrop-blur-sm bg-black/40 hover:bg-black/60 text-white/70 hover:text-white w-9 h-9 rounded-full flex items-center justify-center border border-white/10 transition-all shadow-lg group"
           title="Leave Game"
         >

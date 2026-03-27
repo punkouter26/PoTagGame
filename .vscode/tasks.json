@@ -16,7 +16,8 @@
     {
       "label": "build-server",
       "type": "shell",
-      "command": "dotnet build src/server/TagGame.csproj -c Debug",
+      "command": "dotnet build src/server/PoTagGame.csproj -c Debug",
+      "dependsOn": "kill-dotnet",
       "options": {
         "cwd": "${workspaceFolder}",
         "shell": { "executable": "pwsh", "args": [ "-NonInteractive", "-Command" ] }
@@ -30,7 +31,7 @@
     {
       "label": "watch-server",
       "type": "shell",
-      "command": "dotnet watch run --project src/server/TagGame.csproj --launch-profile http",
+      "command": "dotnet watch run --project src/server/PoTagGame.csproj --launch-profile http",
       "options": {
         "cwd": "${workspaceFolder}",
         "shell": { "executable": "pwsh", "args": [ "-NonInteractive", "-Command" ] }

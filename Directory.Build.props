@@ -1,6 +1,6 @@
 <Project>
   <!--
-    Directory.Build.props — applies to ALL projects under src/.
+    Directory.Build.props — applies to all projects in this repository tree.
     Individual .csproj files should NOT repeat these properties.
   -->
   <PropertyGroup>
