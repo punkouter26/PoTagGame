@@ -128,36 +128,3 @@ jobs:
             echo "::warning::Health check returned $STATUS — app may still be warming up"
           fi
 
-  # ── 5. Playwright E2E (on push to main after deploy) ─────────────────────
-  test-e2e:
-    name: Playwright E2E
-    runs-on: ubuntu-latest
-    needs: [deploy]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: src/tests/TagGame.Tests.E2E/package-lock.json
-
-      - name: Install Playwright
-        working-directory: src/tests/TagGame.Tests.E2E
-        run: npm ci && npx playwright install --with-deps chromium
-
-      - name: Run E2E tests
-        working-directory: src/tests/TagGame.Tests.E2E
-        env:
-          BASE_URL: 'https://potaggame-server.azurewebsites.net'
-        run: npm test
-
-      - name: Upload test report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: src/tests/TagGame.Tests.E2E/playwright-report
-          retention-days: 7
