@@ -23,12 +23,24 @@ export function useLobby(
   connection: signalR.HubConnection | null,
   isOnline:   boolean,
   myId:       string | null,
+  joinRejectedCode?: string | null,
 ): UseLobbyResult {
   const savedName = sessionStorage.getItem(STORAGE_KEY_NAME) ?? '';
   const [name,      setName]      = useState(savedName);
   const [hasJoined, setHasJoined] = useState(false);
   const [retryCountdown, setRetryCountdown] = useState<number | null>(null);
   const retryRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (joinRejectedCode) {
+      if (joinRejectedCode === 'LobbyFull') {
+        // If lobby is full, stop retrying and let user know it's a hard stop
+        setHasJoined(false);
+        if (retryRef.current) { clearInterval(retryRef.current); retryRef.current = null; }
+        setRetryCountdown(null);
+      }
+    }
+  }, [joinRejectedCode]);
 
   // Auto-restore joined state after a round ends and LobbyScreen remounts:
   // if the server already knows this player (myId is set), skip the name form.

@@ -74,6 +74,7 @@ export interface GameState {
   itId:             string | null;
   leaderboard:      PlayerSnapshot[];
   errorMessage:     string | null;
+  joinRejectedCode?: string | null;
   arenaId:          string;
   currentRound:     number;
   totalRounds:      number;

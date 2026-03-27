@@ -29,7 +29,12 @@ export function LobbyScreen({
   selectedArenaId,
   onArenaChange,
 }: LobbyScreenProps) {
-  const { name, setName, handleJoin, resetJoin, hasJoined, clearSaved, hasSavedName, retryCountdown } = useLobby(connection, isOnline, gameState.myId);
+  const { name, setName, handleJoin, resetJoin, hasJoined, clearSaved, hasSavedName, retryCountdown } = useLobby(
+    connection, 
+    isOnline, 
+    gameState.myId, 
+    gameState.joinRejectedCode
+  );
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-start countdown when 2+ players are in the lobby
@@ -90,8 +95,16 @@ export function LobbyScreen({
 
       {/* Error banner */}
       {gameState.errorMessage && (
-        <div className="glass-card rounded-xl px-4 py-2 text-sm max-w-md text-center border-red-500/30 bg-red-500/10 animate-scale-in">
-          {gameState.errorMessage}
+        <div className="glass-card rounded-xl px-4 py-3 text-sm max-w-md text-center border-red-500/30 bg-red-500/10 animate-scale-in flex flex-col gap-2">
+          <span>{gameState.errorMessage}</span>
+          {gameState.joinRejectedCode !== 'LobbyFull' && hasJoined && retryCountdown !== null && (
+            <span className="text-xs text-red-300 font-medium">Auto-retrying in {retryCountdown}s...</span>
+          )}
+          {gameState.joinRejectedCode === 'LobbyFull' && (
+            <Button onClick={() => handleJoin()} className="mt-2 text-xs py-1 px-3 self-center">
+              Try Again
+            </Button>
+          )}
         </div>
       )}
 

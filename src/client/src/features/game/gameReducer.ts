@@ -22,6 +22,7 @@ export type GameAction =
   | { type: 'GAME_ENDED';     payload: GameEndedPayload      }
   | { type: 'ROUND_ENDED';    payload: RoundEndedPayload     }
   | { type: 'ERROR';          payload: { message: string }   }
+  | { type: 'JOIN_REJECTED';  payload: { code: string; message: string } }
   | { type: 'CLEAR_ERROR'                                     }
   | { type: 'RESET_TO_LOBBY'                                  };
 
@@ -37,6 +38,7 @@ export const initialGameState: GameState = {
   itId:             null,
   leaderboard:      [],
   errorMessage:     null,
+  joinRejectedCode: null,
   arenaId:          'grassland',
   currentRound:     0,
   totalRounds:      3,
@@ -57,6 +59,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         myId:       action.payload.playerId,
         myColorIdx: action.payload.colorIdx,
         errorMessage: null,
+        joinRejectedCode: null,
       };
 
     case 'LOBBY_UPDATED':
@@ -122,8 +125,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         errorMessage: action.payload.message,
       };
 
+    case 'JOIN_REJECTED':
+      return {
+        ...state,
+        errorMessage: action.payload.message,
+        joinRejectedCode: action.payload.code,
+      };
+
     case 'CLEAR_ERROR':
-      return { ...state, errorMessage: null };
+      return { ...state, errorMessage: null, joinRejectedCode: null };
 
     case 'RESET_TO_LOBBY':
       return { ...initialGameState };

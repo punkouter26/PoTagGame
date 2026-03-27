@@ -38,6 +38,7 @@ export function useGame(
     connection.on('GameEnded',     (p) => dispatch({ type: 'GAME_ENDED',    payload: p }));
     connection.on('RoundEnded',    (p) => dispatch({ type: 'ROUND_ENDED',   payload: p }));
     connection.on('Error',         (p) => dispatch({ type: 'ERROR',         payload: p }));
+    connection.on('JoinRejected',  (p) => dispatch({ type: 'JOIN_REJECTED', payload: p }));
 
     return () => {
       connection.off('Joined');
@@ -49,6 +50,7 @@ export function useGame(
       connection.off('GameEnded');
       connection.off('RoundEnded');
       connection.off('Error');
+      connection.off('JoinRejected');
     };
   }, [connection]);
 
