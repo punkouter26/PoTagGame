@@ -5,7 +5,7 @@ import { LobbyScreen } from '@/features/lobby';
 import { GameCanvas } from '@/features/game';
 import { DEFAULT_ARENA_ID } from '@/constants/arenas';
 
-const HUB_URL = '/tagHub';
+const HUB_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '/tagHub';
 
 export default function App() {
   const { connection, status, isOnline } = useSignalR(HUB_URL);

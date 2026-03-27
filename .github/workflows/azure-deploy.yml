@@ -1,14 +1,21 @@
-name: Build and Deploy to Azure SWA
+name: Build and Deploy PoTagGame
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # Required for OIDC Azure login
+  contents: read
 
 env:
-  DOTNET_VERSION: '10.x'
-  NODE_VERSION:   '20'
+  DOTNET_VERSION:   '10.x'
+  NODE_VERSION:     '20'
+  AZURE_APP_NAME:   'PoTagGame-Server'
+  SWA_APP_LOCATION: 'src/server/wwwroot'
 
 jobs:
   # ── 1. Build React client ─────────────────────────────────────────────────
@@ -31,14 +38,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Vite SPA  (outputs to src/server/wwwroot)
+      - name: Build Vite SPA
         run: npm run build
+        env:
+          VITE_API_URL: 'https://potaggame-server.azurewebsites.net/tagHub'
 
       - name: Upload wwwroot artifact
         uses: actions/upload-artifact@v4
         with:
           name: wwwroot
           path: src/server/wwwroot
+          retention-days: 1
 
   # ── 2. C# unit tests ─────────────────────────────────────────────────────
   test-unit:
@@ -53,7 +63,7 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Run unit tests
-        run: dotnet test src/tests/TagGame.Tests.Unit/TagGame.Tests.Unit.csproj --logger "console;verbosity=normal"
+        run: dotnet test src/tests/TagGame.Tests.Unit/TagGame.Tests.Unit.csproj --logger "console;verbosity=normal" --configuration Release
 
   # ── 3. C# integration tests ───────────────────────────────────────────────
   test-integration:
@@ -68,14 +78,15 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Run integration tests
-        run: dotnet test src/tests/TagGame.Tests.Integration/TagGame.Tests.Integration.csproj --logger "console;verbosity=normal"
+        run: dotnet test src/tests/TagGame.Tests.Integration/TagGame.Tests.Integration.csproj --logger "console;verbosity=normal" --configuration Release
 
-  # ── 4. Publish .NET + Deploy to Azure SWA ───────────────────────────────
+  # ── 4. Publish .NET + Deploy (push to main only) ─────────────────────────
   deploy:
     name: Publish & Deploy
     runs-on: ubuntu-latest
     needs: [build-client, test-unit, test-integration]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment: production
 
     steps:
       - uses: actions/checkout@v4
@@ -96,29 +107,45 @@ jobs:
             -c Release \
             -o publish
 
+      - name: Azure login (OIDC — no secrets stored)
+        uses: azure/login@v2
+        with:
+          client-id:       ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id:       ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
       - name: Deploy Client to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token:                      ${{ secrets.GITHUB_TOKEN }}
           action:                          upload
-          app_location:                    src/server/wwwroot # Point directly to compiled client
+          app_location:                    ${{ env.SWA_APP_LOCATION }}
           skip_app_build:                  true
           output_location:                 ''
 
       - name: Deploy Server to Azure App Service
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
-          app-name: 'PoTagGame-Server' # Change this to match your actual App Service name
-          publish-profile: ${{ secrets.AZURE_APP_SERVICE_PUBLISH_PROFILE }}
-          package: publish
+          app-name: ${{ env.AZURE_APP_NAME }}
+          package:  publish
 
-  # ── 5. Playwright E2E (against deployed staging URL on PRs) ─────────────
+      - name: Verify /health endpoint
+        run: |
+          echo "Waiting for deployment to warm up..."
+          sleep 30
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.AZURE_APP_NAME }}.azurewebsites.net/health)
+          echo "Health check status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "::warning::Health check returned $STATUS — app may still be warming up"
+          fi
+
+  # ── 5. Playwright E2E (on push to main after deploy) ─────────────────────
   test-e2e:
     name: Playwright E2E
     runs-on: ubuntu-latest
     needs: [deploy]
-    if: github.event_name == 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
       - uses: actions/checkout@v4
@@ -131,12 +158,12 @@ jobs:
 
       - name: Install Playwright
         working-directory: src/tests/TagGame.Tests.E2E
-        run: npm ci && npx playwright install --with-deps
+        run: npm ci && npx playwright install --with-deps chromium
 
       - name: Run E2E tests
         working-directory: src/tests/TagGame.Tests.E2E
         env:
-          BASE_URL: ${{ secrets.STAGING_URL }}
+          BASE_URL: 'https://victorious-island-089ca500f.4.azurestaticapps.net'
         run: npm test
 
       - name: Upload test report
@@ -145,3 +172,4 @@ jobs:
         with:
           name: playwright-report
           path: src/tests/TagGame.Tests.E2E/playwright-report
+          retention-days: 7

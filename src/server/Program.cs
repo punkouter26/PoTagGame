@@ -98,6 +98,22 @@ try
     // ── Background clock (1 Hz game timer) ────────────────────────────────────
     builder.Services.AddHostedService<GameBackgroundService>();
 
+    // ── CORS (allows Azure Static Web Apps to reach the SignalR hub) ──────────
+    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("SwaPolicy", policy =>
+        {
+            if (allowedOrigins.Length > 0)
+                policy.WithOrigins(allowedOrigins)
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials();
+            else
+                policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        });
+    });
+
     var app = builder.Build();
 
     // ── Middleware pipeline ────────────────────────────────────────────────────
@@ -146,6 +162,8 @@ try
             diagnosticContext.Set("CorrelationId", context.Response.Headers["x-correlation-id"].ToString());
         };
     });
+
+    app.UseCors("SwaPolicy");
 
     // Serve CSS/JS/image assets from wwwroot
     app.UseDefaultFiles();   // → index.html
